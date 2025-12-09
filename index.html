@@ -6,501 +6,576 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       * {
-        box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        background: #f5f7fb;
-        color: #111827;
-      }
-
-      .app {
-        display: flex;
-        min-height: 100vh;
-      }
-
-      .sidebar {
-        width: 260px;
-        background: #ffffff;
-        border-right: 1px solid #e5e7eb;
-        display: flex;
-        flex-direction: column;
-        padding: 16px 12px;
-        position: sticky;
-        top: 0;
-        height: 100vh;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 10px 16px;
-        border-bottom: 1px solid #f3f4f6;
-        margin-bottom: 12px;
-      }
-
-      .brand-logo {
-        width: 34px;
-        height: 34px;
-        border-radius: 999px;
-        background: linear-gradient(135deg, #2563eb, #7c3aed);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: 700;
-        font-size: 18px;
-      }
-
-      .brand-text-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: #111827;
-      }
-
-      .brand-text-sub {
-        font-size: 11px;
-        color: #6b7280;
-      }
-
-      .nav {
-        margin-top: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .nav button {
-        border: none;
-        background: transparent;
-        text-align: left;
-        padding: 8px 10px;
-        border-radius: 10px;
-        font-size: 14px;
-        color: #374151;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-      }
-
-      .nav button span.label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .nav button .dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: #d1d5db;
-      }
-
-      .nav button.active {
-        background: #eef2ff;
-        color: #1d4ed8;
-      }
-
-      .nav button.active .dot {
-        background: #4f46e5;
-      }
-
-      .nav button:hover:not(.active) {
-        background: #f3f4f6;
-      }
-
-      .sidebar-footer {
-        margin-top: auto;
-        font-size: 11px;
-        color: #9ca3af;
-        padding: 6px 10px;
-      }
-
-      .content {
-        flex: 1;
-        padding: 16px;
-        max-width: 100%;
-      }
-
-      .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-        gap: 8px;
-      }
-
-      .topbar-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #111827;
-      }
-
-      .topbar-sub {
-        font-size: 12px;
-        color: #6b7280;
-      }
-
-      .stats-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-
-      .stat-card {
-        background: #ffffff;
-        border-radius: 14px;
-        padding: 10px 12px;
-        min-width: 140px;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-        border: 1px solid #f3f4f6;
-      }
-
-      .stat-label {
-        font-size: 11px;
-        color: #6b7280;
-      }
-
-      .stat-value {
-        font-size: 18px;
-        font-weight: 700;
-        color: #111827;
-      }
-
-      .stat-pill {
-        font-size: 10px;
-        color: #4b5563;
-        background: #f3f4ff;
-        padding: 2px 6px;
-        border-radius: 999px;
-        display: inline-block;
-        margin-top: 4px;
-      }
-
-      .views {
-        margin-top: 8px;
-      }
-
-      .view {
-        display: none;
-      }
-
-      .view.active {
-        display: block;
-      }
-
-      .card {
-        background: #ffffff;
-        border-radius: 14px;
-        padding: 12px;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-        border: 1px solid #e5e7eb;
-        margin-bottom: 14px;
-      }
-
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-      }
-
-      .card-title {
-        font-size: 15px;
-        font-weight: 600;
-      }
-
-      .card-sub {
-        font-size: 12px;
-        color: #6b7280;
-      }
-
-      .chip {
-        font-size: 11px;
-        padding: 3px 8px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #1d4ed8;
-      }
-
-      .muted {
-        font-size: 12px;
-        color: #6b7280;
-      }
-
-      .form-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 8px;
-      }
-
-      .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        flex: 1;
-        min-width: 120px;
-      }
-
-      .form-field label {
-        font-size: 12px;
-        color: #4b5563;
-      }
-
-      input,
-      select,
-      textarea {
-        padding: 5px 7px;
-        border-radius: 10px;
-        border: 1px solid #d1d5db;
-        font-size: 13px;
-        outline: none;
-        background: #f9fafb;
-        
-      }
-
-      
-      input:focus,
-      select:focus,
-      textarea:focus {
-        border-color: #2563eb;
-        background: #ffffff;
-        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
-      }
-
-      button.primary {
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
-        border: none;
-        color: #ffffff;
-        padding: 8px 12px;
-        border-radius: 999px;
-        font-size: 13px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      button.primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      button.secondary {
-        background: #f3f4f6;
-        border: none;
-        color: #374151;
-        padding: 7px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-
-      button.secondary:hover {
-        background: #e5e7eb;
-      }
-
-      .qty-btn {
-        border-radius: 999px;
-        width: 22px;
-        height: 22px;
-        border: 1px solid #d1d5db;
-        background: #f9fafb;
-        font-size: 14px;
-        cursor: pointer;
-      }
-
-      .tag {
-        font-size: 11px;
-        padding: 2px 7px;
-        border-radius: 999px;
-        display: inline-block;
-      }
-
-      .tag.pending {
-        background: #fef3c7;
-        color: #92400e;
-      }
-
-      .tag.delivered {
-        background: #dcfce7;
-        color: #166534;
-      }
-
-      .tag.cancelled {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-      }
-
-      th,
-      td {
-        padding: 6px 6px;
-        border-bottom: 1px solid #f3f4f6;
-        text-align: left;
-        vertical-align: middle;
-      }
-
-      th {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: #6b7280;
-      }
-
-      tr:hover td {
-        background: #f9fafb;
-      }
-
-      .text-right {
-        text-align: right;
-      }
-
-      .flex {
-        display: flex;
-      }
-
-      .flex-between {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .gap-8 {
-        gap: 8px;
-      }
-
-      .mt-4 {
-        margin-top: 4px;
-      }
-
-      .mt-8 {
-        margin-top: 8px;
-      }
-
-      .scroll-y {
-        max-height: 340px;
-        overflow-y: auto;
-        overflow-x: auto;
-      }
-
-      .badge {
-        display: inline-block;
-        font-size: 11px;
-        padding: 2px 6px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #1d4ed8;
-      }
-
-      @media (max-width: 900px) {
-        .sidebar {
-          position: fixed;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          transform: translateX(-100%);
-          transition: transform 0.2s ease;
-          z-index: 40;
-        }
-
-        .sidebar.open {
-          transform: translateX(0);
-        }
-
-        .content {
-          padding: 12px;
-        }
-
-        .topbar {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .mobile-nav-toggle {
-          display: inline-flex;
-        }
-
-        th,
-        td {
-          padding: 4px;
-        }
-      }
-
-      @media (min-width: 901px) {
-        .mobile-nav-toggle {
-          display: none;
-        }
-      }
-
-      .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.3);
-        display: none;
-        z-index: 30;
-      }
-
-      .overlay.show {
-        display: block;
-      }
-
-      /* extra small helpers for My Orders cards */
-      .order-card {
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 10px 12px;
-        margin-bottom: 10px;
-        background: #fff;
-      }
-
-      .order-header-line {
-        font-size: 13px;
-        font-weight: 600;
-      }
-
-      .order-shop-pill {
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #1d4ed8;
-        margin-left: 6px;
-      }
-
-      .order-item-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 4px;
-      }
-
-      .order-item-text {
-        font-size: 12px;
-      }
-
-      .order-actions {
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-      }
-
-      .order-actions button {
-        flex: 1;
-      }
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #f5f7fb;
+  color: #111827;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 12px;
+}
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.brand-text-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.brand-text-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.nav {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.nav button span.label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav button .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.nav button.active {
+  background: #eef2ff;
+  color: #1d4ed8;
+}
+
+.nav button.active .dot {
+  background: #4f46e5;
+}
+
+.nav button:hover:not(.active) {
+  background: #f3f4f6;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 6px 10px;
+}
+
+.content {
+  flex: 1;
+  padding: 16px;
+  max-width: 100%;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.topbar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.topbar-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  min-width: 140px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border: 1px solid #f3f4f6;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stat-pill {
+  font-size: 10px;
+  color: #4b5563;
+  background: #f3f4ff;
+  padding: 2px 6px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.views {
+  margin-top: 8px;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 14px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.card-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.muted {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 120px;
+}
+
+/* custom menu button class (if you use it) */
+.menu-btn {
+  background-color: #2563eb;
+  border-radius: 25px;
+  width: 100px;
+  color: #ffffff;
+
+  font-weight: 600;
+}
+
+/* mobile nav button styling */
+#mobileNavBtn,
+.mobile-nav-toggle {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-radius: 25px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+#mobileNavBtn:hover,
+.mobile-nav-toggle:hover {
+  background-color: #1d4ed8;
+}
+
+.form-field label {
+  font-size: 12px;
+  color: #4b5563;
+}
+
+input,
+select,
+textarea {
+  padding: 5px 7px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 13px;
+  outline: none;
+  background: #f9fafb;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+button.primary {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: none;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #f3f4f6;
+  border: none;
+  color: #374151;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button.secondary:hover {
+  background: #e5e7eb;
+}
+
+.qty-btn {
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.tag.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tag.delivered {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tag.cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th,
+td {
+  padding: 6px 6px;
+  border-bottom: 1px solid #f3f4f6;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+}
+
+tr:hover td {
+  background: #f9fafb;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.mt-4 {
+  margin-top: 4px;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
+
+.scroll-y {
+  max-height: 340px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* --------- Mobile: layout tweaks --------- */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 40;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .content {
+    padding: 12px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  th,
+  td {
+    padding: 4px;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-nav-toggle {
+    display: none;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.3);
+  display: none;
+  z-index: 30;
+}
+
+.overlay.show {
+  display: block;
+}
+
+/* extra small helpers for My Orders cards */
+.order-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.order-header-line {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.order-shop-pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  margin-left: 6px;
+}
+
+.order-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.order-item-text {
+  font-size: 12px;
+}
+
+.order-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.order-actions button {
+  flex: 1;
+}
+
+/* ---------- MOBILE: Place Order product list (no right scroll) ---------- */
+@media (max-width: 700px) {
+  /* Each product row becomes a card */
+  #orderProductsTableBody tr {
+    display: block;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #ffffff;
+  }
+
+  #orderProductsTableBody td {
+    display: block;
+    width: 250px;
+    box-sizing: border-box;
+    text-align: left !important;
+    padding: 6px 8px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  #orderProductsTableBody td:last-child {
+    border-bottom: none;
+  }
+
+  #orderProductsTableBody td.text-right {
+    text-align: left !important;
+  }
+
+  #orderProductsTableBody textarea.order-note-input {
+    width: 100% !important;
+    min-height: 40px !important;
+    resize: vertical;
+  }
+
+  #orderProductsTableBody .order-add-btn {
+    width: 100% !important;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  #orderProductsTableBody .qty-btn-plus,
+  #orderProductsTableBody .qty-btn-minus {
+    width: 26px;
+    height: 26px;
+  }
+}
+
     </style>
   </head>
   <body>
@@ -568,7 +643,7 @@
             </div>
           </div>
           <button class="secondary mobile-nav-toggle" id="mobileNavBtn">
-            ☰ Menu
+           <h2 style="color: white; " class="menu-btn">☰ Menu</h2> 
           </button>
         </div>
 
@@ -832,11 +907,11 @@
                   <table>
                     <thead>
                       <tr>
-                        <th>Product</th>
+                        <!-- <th>Product</th>
                         <th class="text-right">MRP</th>
                         <th class="text-right">Sale</th>
                         <th class="text-right">Qty</th>
-                        <th>Note</th>
+                        <th>Note</th> -->
                         <th></th>
                       </tr>
                     </thead>
@@ -1847,4 +1922,3 @@ tbody.querySelectorAll(".qty-btn-minus").forEach((btn) => {
   </script>
 </body>
 </html>
-
