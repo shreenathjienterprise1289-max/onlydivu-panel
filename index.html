@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Product & Shop Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f5f7fb;
+        color: #111827;
+      }
+
+      .app {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 260px;
+        background: #ffffff;
+        border-right: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        padding: 16px 12px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        margin-bottom: 12px;
+      }
+
+      .brand-logo {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 18px;
+      }
+
+      .brand-text-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .brand-text-sub {
+        font-size: 11px;
+        color: #6b7280;
+      }
+
+      .nav {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .nav button {
+        border: none;
+        background: transparent;
+        text-align: left;
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #374151;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      .nav button span.label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .nav button .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #d1d5db;
+      }
+
+      .nav button.active {
+        background: #eef2ff;
+        color: #1d4ed8;
+      }
+
+      .nav button.active .dot {
+        background: #4f46e5;
+      }
+
+      .nav button:hover:not(.active) {
+        background: #f3f4f6;
+      }
+
+      .sidebar-footer {
+        margin-top: auto;
+        font-size: 11px;
+        color: #9ca3af;
+        padding: 6px 10px;
+      }
+
+      .content {
+        flex: 1;
+        padding: 16px;
+        max-width: 100%;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        gap: 8px;
+      }
+
+      .topbar-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .topbar-sub {
+        font-size: 12px;
+        color: #6b7280;
+      }
+
+      .stats-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .stat-card {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 10px 12px;
+        min-width: 140px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        border: 1px solid #f3f4f6;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: #6b7280;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .stat-pill {
+        font-size: 10px;
+        color: #4b5563;
+        background: #f3f4ff;
+        padding: 2px 6px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-top: 4px;
+      }
+
+      .views {
+        margin-top: 8px;
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      .card {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 14px;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .card-title {
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .card-sub {
+        font-size: 12px;
+        color: #6b7280;
+      }
+
+      .chip {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+
+      .muted {
+        font-size: 12px;
+        color: #6b7280;
+      }
+
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        flex: 1;
+        min-width: 120px;
+      }
+
+      .form-field label {
+        font-size: 12px;
+        color: #4b5563;
+      }
+
+      input,
+      select,
+      textarea {
+        padding: 5px 7px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        font-size: 13px;
+        outline: none;
+        background: #f9fafb;
+        
+      }
+
+      
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: #2563eb;
+        background: #ffffff;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+      }
+
+      button.primary {
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
+        border: none;
+        color: #ffffff;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      button.primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      button.secondary {
+        background: #f3f4f6;
+        border: none;
+        color: #374151;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      button.secondary:hover {
+        background: #e5e7eb;
+      }
+
+      .qty-btn {
+        border-radius: 999px;
+        width: 22px;
+        height: 22px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .tag {
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        display: inline-block;
+      }
+
+      .tag.pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .tag.delivered {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .tag.cancelled {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      th,
+      td {
+        padding: 6px 6px;
+        border-bottom: 1px solid #f3f4f6;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+      }
+
+      tr:hover td {
+        background: #f9fafb;
+      }
+
+      .text-right {
+        text-align: right;
+      }
+
+      .flex {
+        display: flex;
+      }
+
+      .flex-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .gap-8 {
+        gap: 8px;
+      }
+
+      .mt-4 {
+        margin-top: 4px;
+      }
+
+      .mt-8 {
+        margin-top: 8px;
+      }
+
+      .scroll-y {
+        max-height: 340px;
+        overflow-y: auto;
+        overflow-x: auto;
+      }
+
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          transform: translateX(-100%);
+          transition: transform 0.2s ease;
+          z-index: 40;
+        }
+
+        .sidebar.open {
+          transform: translateX(0);
+        }
+
+        .content {
+          padding: 12px;
+        }
+
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .mobile-nav-toggle {
+          display: inline-flex;
+        }
+
+        th,
+        td {
+          padding: 4px;
+        }
+      }
+
+      @media (min-width: 901px) {
+        .mobile-nav-toggle {
+          display: none;
+        }
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.3);
+        display: none;
+        z-index: 30;
+      }
+
+      .overlay.show {
+        display: block;
+      }
+
+      /* extra small helpers for My Orders cards */
+      .order-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        background: #fff;
+      }
+
+      .order-header-line {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .order-shop-pill {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        margin-left: 6px;
+      }
+
+      .order-item-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .order-item-text {
+        font-size: 12px;
+      }
+
+      .order-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .order-actions button {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay" id="overlay"></div>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+       
+          <img class="brand-logo" src="NEW LOGO.jpg" alt="">
+          <div>
+            <div class="brand-text-title">Divu Dhorajiya</div>
+            <div class="brand-text-sub">Shops · Products · Orders</div>
+          </div>
+        </div>
+
+        <div class="nav">
+          <button class="active" data-view="dashboard">
+            <span class="label">
+              <span class="dot"></span>
+              Dashboard
+            </span>
+            <span style="font-size: 11px; color: #9ca3af">Home</span>
+          </button>
+          <button data-view="shops">
+            <span class="label">
+              <span class="dot"></span>
+              Shops
+            </span>
+            <span style="font-size: 11px; color: #9ca3af">Add / list</span>
+          </button>
+          <button data-view="products">
+            <span class="label">
+              <span class="dot"></span>
+              Products
+            </span>
+            <span style="font-size: 11px; color: #9ca3af">List & add</span>
+          </button>
+          <button data-view="place-order">
+            <span class="label">
+              <span class="dot"></span>
+              Place Order
+            </span>
+            <span style="font-size: 11px; color: #9ca3af">Create</span>
+          </button>
+          <button data-view="orders">
+            <span class="label">
+              <span class="dot"></span>
+              My Orders
+            </span>
+            <span style="font-size: 11px; color: #9ca3af">History</span>
+          </button>
+        </div>
+
+        <div class="sidebar-footer">No login · Local admin panel MVP</div>
+      </aside>
+
+      <!-- Content -->
+      <main class="content">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Distributor Admin Panel</div>
+            <div class="topbar-sub">
+              Manage shops, products & orders from one place.
+            </div>
+          </div>
+          <button class="secondary mobile-nav-toggle" id="mobileNavBtn">
+            ☰ Menu
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total Shops</div>
+            <div class="stat-value" id="statShops">0</div>
+            <div class="stat-pill" id="statShopsSub">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Products</div>
+            <div class="stat-value" id="statProducts">0</div>
+            <div class="stat-pill" id="statProductsSub">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pending Orders</div>
+            <div class="stat-value" id="statPending">0</div>
+            <div class="stat-pill" id="statPendingSub">—</div>
+          </div>
+        </div>
+
+        <div class="views">
+          <!-- Dashboard -->
+          <section id="view-dashboard" class="view active">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Quick overview</div>
+                  <div class="card-sub">
+                    Add shops & products first, then start placing orders.
+                  </div>
+                </div>
+                <span class="chip">MVP · No login</span>
+              </div>
+              <ul class="muted" style="font-size: 13px; padding-left: 18px">
+                <li>Left side se section choose karo (Shops, Products, etc.)</li>
+                <li>"Shops" me pehle tumhare sare medical shop add karo.</li>
+                <li>"Products" me tumhare 1000+ product MongoDB me store honge.</li>
+                <li>
+                  "Place Order" me shop select karke products list-wise add karo,
+                  qty + / - se change karo, phir submit / update.
+                </li>
+                <li>
+                  "My Orders" me har order card-style dikhega, jitne item chaho
+                  select kar sakte ho.
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- Shops -->
+          <section id="view-shops" class="view">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Shops</div>
+                  <div class="card-sub">
+                    Sirf shop name store kar rahe hain. Search + add.
+                  </div>
+                </div>
+                <span class="chip" id="shopsCountChip">0 shops</span>
+              </div>
+
+              <!-- Add shop -->
+              <div class="form-row">
+                <div class="form-field">
+                  <label>New shop name</label>
+                  <input
+                    type="text"
+                    id="shopNameInput"
+                    placeholder="e.g. SHREENATHJI MEDICAL (AMROLI)"
+                  />
+                </div>
+                <div class="form-field" style="max-width: 140px">
+                  <label>&nbsp;</label>
+                  <button class="primary" id="addShopBtn">+ Add Shop</button>
+                </div>
+              </div>
+
+              <!-- Search shops -->
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Search shop</label>
+                  <input
+                    type="text"
+                    id="shopSearchInput"
+                    placeholder="Type to filter shops..."
+                  />
+                </div>
+              </div>
+
+              <div class="mt-8 muted">
+                Below is live data from MongoDB (shops collection).
+              </div>
+
+              <div class="mt-8 scroll-y">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Shop name</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shopsTableBody">
+                    <tr>
+                      <td colspan="3" class="muted">
+                        No shops yet. Add your first shop above.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Products -->
+          <section id="view-products" class="view">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Products</div>
+                  <div class="card-sub">
+                    All distributor products with MRP & sale price.
+                  </div>
+                </div>
+                <span class="chip" id="productsCountChip">0 products</span>
+              </div>
+
+              <!-- Search + list -->
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Search product</label>
+                  <input
+                    type="text"
+                    id="productSearchInput"
+                    placeholder="Type to filter in list below..."
+                  />
+                </div>
+              </div>
+
+              <div class="scroll-y mt-4">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th class="text-right">MRP</th>
+                      <th class="text-right">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody id="productsTableBody">
+                    <tr>
+                      <td colspan="3" class="muted">
+                        No products yet. Use Add Product form below or bulk insert
+                        from Node.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <hr
+                style="
+                  border: none;
+                  border-top: 1px solid #f3f4f6;
+                  margin: 12px 0;
+                "
+              />
+
+              <!-- Add Product form -->
+              <div class="card-sub" style="margin-bottom: 6px">
+                Quick add single product:
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Product name</label>
+                  <input
+                    type="text"
+                    id="newProductName"
+                    placeholder="e.g. ENA BODY LOTION 20MRP"
+                  />
+                </div>
+                <div class="form-field" style="max-width: 120px">
+                  <label>MRP</label>
+                  <input type="number" id="newProductMrp" step="0.01" />
+                </div>
+                <div class="form-field" style="max-width: 120px">
+                  <label>Sale price</label>
+                  <input type="number" id="newProductPrice" step="0.01" />
+                </div>
+                <div class="form-field" style="max-width: 140px">
+                  <label>&nbsp;</label>
+                  <button class="primary" id="addProductBtn">
+                    + Add Product
+                  </button>
+                </div>
+              </div>
+
+              <div class="muted mt-4">
+                (Tumhare 1000+ products ko Node se bulk insert kar sakte ho –
+                fields: name, mrp, salePrice.)
+              </div>
+            </div>
+          </section>
+
+          <!-- PLACE ORDER – products table style -->
+          <section id="view-place-order" class="view">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Place Order</div>
+                  <div class="card-sub">
+                    Products & Cart: qty likho, note optional, Add → cart.
+                  </div>
+                </div>
+                <span class="chip">Order creator</span>
+              </div>
+
+              <!-- Shop search + select -->
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Search shop</label>
+                  <input
+                    type="text"
+                    id="orderShopSearch"
+                    placeholder="Search shop name..."
+                  />
+                </div>
+
+                <div class="form-field">
+                  <label>Select shop</label>
+                  <select id="orderShopSelect">
+                    <option value="">-- Select shop --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Products & Cart layout -->
+              <div class="mt-8">
+                <div class="card-sub">Products & Cart</div>
+                <div class="muted" style="margin-bottom: 4px">
+                  Product list MongoDB se aa raha hai. Search karo, qty likho,
+                  note optional, phir <b>Add</b> dabao.
+                </div>
+
+                <!-- Search products -->
+                <div class="form-row">
+                  <div class="form-field">
+                    <label>Search product</label>
+                    <input
+                      type="text"
+                      id="orderProductSearch"
+                      placeholder="Search in your product list..."
+                    />
+                  </div>
+                </div>
+
+                <!-- Product list table -->
+                <div class="scroll-y mt-4">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th class="text-right">MRP</th>
+                        <th class="text-right">Sale</th>
+                        <th class="text-right">Qty</th>
+                        <th>Note</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="orderProductsTableBody">
+                      <tr>
+                        <td colspan="6" class="muted">
+                          Search above and products will appear here.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Current Cart -->
+                <div class="mt-8">
+                  <div class="flex-between">
+                    <div class="card-sub">Current Cart</div>
+                    <div class="muted" id="orderItemsHint">Cart empty.</div>
+                  </div>
+
+                  <div class="scroll-y mt-4">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th class="text-right">MRP</th>
+                          <th class="text-right">Price</th>
+                          <th class="text-right">Qty</th>
+                          <th class="text-right">Line Total</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="orderItemsTableBody">
+                        <tr>
+                          <td colspan="6" class="muted">
+                            Cart empty. Add from product list above.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="flex-between mt-8">
+                    <div class="muted">
+                      Quantity ke aage <b>+ / -</b> se directly change kar sakte
+                      ho.
+                    </div>
+                    <div>
+                      <span class="muted">Order total:</span>
+                      <span class="card-title" id="orderTotal">₹0.00</span>
+                    </div>
+                  </div>
+
+                  <div class="mt-8 flex gap-8">
+                    <button class="primary" id="submitOrderBtn">
+                      ✅ Submit Order
+                    </button>
+                    <button class="secondary" id="resetOrderBtn">
+                      ✖ Clear
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Orders – card + item-wise checkbox -->
+          <section id="view-orders" class="view">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Your Orders</div>
+                  <div class="card-sub">
+                    Har user sirf apne orders dekh sakta hai. (Private orders)
+                  </div>
+                </div>
+                <span class="chip" id="ordersCountChip">0 orders</span>
+              </div>
+
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Filter by shop</label>
+                  <select id="filterShopSelect">
+                    <option value="">All shops</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Filter by status</label>
+                  <select id="filterStatusSelect">
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div class="form-field" style="max-width: 220px">
+                  <label>&nbsp;</label>
+                  <button class="secondary" id="refreshOrdersBtn">
+                    🔄 Refresh
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-4 flex gap-8">
+                <button class="secondary" id="markDeliveredBtn">
+                  ✅ Mark selected Delivered
+                </button>
+                <button class="secondary" id="markCancelledBtn">
+                  🛑 Mark selected Cancelled
+                </button>
+              </div>
+
+              <div class="scroll-y mt-8">
+                <div id="ordersCardsContainer"></div>
+              </div>
+
+              <div class="mt-4">
+                <button class="secondary" id="clearSelectionsBtn">
+                  Clear All Orders (this browser)
+                </button>
+              </div>
+
+              <div class="muted mt-4">
+                Har item ke aage checkbox hai. Selected items browser ke
+                localStorage me save hote hain, isliye page refresh ke baad bhi
+                tick mark nahi gayab hoga. Edit se order “Place Order” me open
+                hoga jahan tum qty change / naya product add karke order update
+                kar sakte ho. Delete se DB se pura order delete ho jata hai.
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:3000";
+
+      let shops = [];
+      let products = [];
+      let orders = [];
+      let currentOrderItems = [];
+      let editingOrderId = null; // agar null nahi hai to edit-mode
+
+      // -------- Item-wise selection (localStorage) ----------
+      const SELECTED_ITEMS_KEY = "selectedOrderItems";
+
+      function loadSelectedItemKeys() {
+        try {
+          return JSON.parse(localStorage.getItem(SELECTED_ITEMS_KEY) || "[]");
+        } catch {
+          return [];
+        }
+      }
+
+      function saveSelectedItemKeys(keys) {
+        localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(keys));
+      }
+
+      let selectedItemKeys = loadSelectedItemKeys();
+
+      function itemKey(orderId, index) {
+        return `${orderId}::${index}`;
+      }
+
+      const navButtons = document.querySelectorAll(".nav button");
+      const views = document.querySelectorAll(".view");
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("overlay");
+      const mobileNavBtn = document.getElementById("mobileNavBtn");
+
+      function showView(viewName) {
+        views.forEach((v) =>
+          v.id === "view-" + viewName
+            ? v.classList.add("active")
+            : v.classList.remove("active")
+        );
+        navButtons.forEach((btn) => {
+          btn.dataset.view === viewName
+            ? btn.classList.add("active")
+            : btn.classList.remove("active");
+        });
+        if (window.innerWidth <= 900) {
+          sidebar.classList.remove("open");
+          overlay.classList.remove("show");
+        }
+
+        // Place order pe aate time agar edit mode nahi hai to button text reset
+        if (viewName === "place-order" && !editingOrderId) {
+          document.getElementById("submitOrderBtn").textContent =
+            "✅ Submit Order";
+        }
+      }
+
+      navButtons.forEach((btn) => {
+        btn.addEventListener("click", () => showView(btn.dataset.view));
+      });
+
+      mobileNavBtn.addEventListener("click", () => {
+        sidebar.classList.add("open");
+        overlay.classList.add("show");
+      });
+      overlay.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("show");
+      });
+
+      async function fetchJSON(url, options = {}) {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+          throw new Error("Request failed: " + res.status);
+        }
+        return res.json();
+      }
+
+      async function loadShops() {
+        try {
+          shops = await fetchJSON(API_BASE + "/api/shops");
+          renderShops();
+          populateShopSelects();
+          updateStats();
+        } catch (err) {
+          console.error(err);
+          alert("Error loading shops");
+        }
+      }
+
+      async function loadProducts() {
+        try {
+          products = await fetchJSON(API_BASE + "/api/products");
+          renderProducts();
+          renderOrderProductList();
+          updateStats();
+        } catch (err) {
+          console.error(err);
+          alert("Error loading products");
+        }
+      }
+
+      async function loadOrders() {
+        try {
+          const params = new URLSearchParams();
+          const shopId = document.getElementById("filterShopSelect").value;
+          const status = document.getElementById("filterStatusSelect").value;
+          if (shopId) params.append("shopId", shopId);
+          if (status) params.append("status", status);
+
+          const url =
+            API_BASE + "/api/orders" + (params.toString() ? "?" + params : "");
+
+          orders = await fetchJSON(url);
+          renderOrders();
+          updateStats();
+        } catch (err) {
+          console.error(err);
+          alert("Error loading orders");
+        }
+      }
+
+      // -------- Stats ----------
+      function updateStats() {
+        document.getElementById("statShops").textContent = shops.length;
+        document.getElementById(
+          "shopsCountChip"
+        ).textContent = `${shops.length} shops`;
+
+        document.getElementById("statProducts").textContent = products.length;
+        document.getElementById(
+          "productsCountChip"
+        ).textContent = `${products.length} products`;
+
+        const pending = orders.filter((o) => o.status === "Pending").length;
+        document.getElementById("statPending").textContent = pending;
+        document.getElementById(
+          "ordersCountChip"
+        ).textContent = `${orders.length} orders`;
+
+        document.getElementById("statShopsSub").textContent =
+          shops.length === 0
+            ? "Add your first shop"
+            : "Shops ready for orders";
+        document.getElementById("statProductsSub").textContent =
+          products.length === 0
+            ? "Bulk import from JSON"
+            : "Searchable in panel";
+        document.getElementById("statPendingSub").textContent =
+          pending === 0 ? "No pending orders" : "Waiting to deliver";
+      }
+
+      // -------- Shops (with search) ----------
+      function renderShops() {
+        const tbody = document.getElementById("shopsTableBody");
+        const searchInput = document.getElementById("shopSearchInput");
+        const search = searchInput
+          ? searchInput.value.toLowerCase()
+          : "".toLowerCase();
+
+        tbody.innerHTML = "";
+
+        if (shops.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="3" class="muted">No shops yet. Add from above form.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        const filtered = shops.filter((shop) =>
+          (shop.name || "").toLowerCase().includes(search)
+        );
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="3" class="muted">No shops found for this search.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        filtered.forEach((shop, idx) => {
+          const tr = document.createElement("tr");
+          const created = new Date(shop.createdAt);
+          tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${shop.name}</td>
+            <td>${created.toLocaleDateString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function populateShopSelects() {
+        const filterShopSelect = document.getElementById("filterShopSelect");
+        filterShopSelect.innerHTML = '<option value="">All shops</option>';
+
+        shops.forEach((shop) => {
+          const opt2 = document.createElement("option");
+          opt2.value = shop._id;
+          opt2.textContent = shop.name;
+          filterShopSelect.appendChild(opt2);
+        });
+
+        renderOrderShopList();
+      }
+
+      function renderOrderShopList() {
+        const search = (
+          document.getElementById("orderShopSearch").value || ""
+        ).toLowerCase();
+        const select = document.getElementById("orderShopSelect");
+
+        select.innerHTML = '<option value="">-- Select shop --</option>';
+
+        shops
+          .filter((s) => (s.name || "").toLowerCase().includes(search))
+          .forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s._id;
+            opt.textContent = s.name;
+            select.appendChild(opt);
+          });
+      }
+
+      // -------- Products tab ----------
+      function renderProducts() {
+        const tbody = document.getElementById("productsTableBody");
+        const search = document
+          .getElementById("productSearchInput")
+          .value.toLowerCase();
+        const filtered = products.filter((p) =>
+          (p.name || "").toLowerCase().includes(search)
+        );
+
+        tbody.innerHTML = "";
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="3" class="muted">No products found for this search.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        filtered.forEach((p) => {
+          const mrp = Number(p.mrp) || 0;
+          const rawPrice = p.price != null ? p.price : p.salePrice;
+          const price = Number(rawPrice) || 0;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${p.name}</td>
+            <td class="text-right">₹${mrp.toFixed(2)}</td>
+            <td class="text-right">₹${price.toFixed(2)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // -------- Place Order: product list ----------
+      function renderOrderProductList() {
+        const tbody = document.getElementById("orderProductsTableBody");
+        const q = document
+          .getElementById("orderProductSearch")
+          .value.toLowerCase();
+
+        const filtered = products.filter((p) =>
+          (p.name || "").toLowerCase().includes(q)
+        );
+
+        tbody.innerHTML = "";
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="muted">No products found for this search.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        filtered.forEach((p) => {
+  const mrp = Number(p.mrp) || 0;
+  const rawPrice = p.price != null ? p.price : p.salePrice;
+  const price = Number(rawPrice) || 0;
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${p.name}</td>
+    <td class="text-right">₹${mrp.toFixed(2)}</td>
+    <td class="text-right">₹${price.toFixed(2)}</td>
+
+    <td class="text-right">
+      <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;">
+        <button class="qty-btn-minus" 
+                data-id="${p._id}"
+                style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;background:#f5f5f5;cursor:pointer;">−</button>
+
+        <input type="number" min="1" value="1"
+               class="order-qty-input"
+               data-id="${p._id}"
+               style="width:50px;padding:4px 6px;border-radius:8px;text-align:center;border:1px solid #d1d5db;" />
+
+        <button class="qty-btn-plus"
+                data-id="${p._id}"
+                style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;background:#f5f5f5;cursor:pointer;">+</button>
+      </div>
+    </td>
+
+    <td>
+      <textarea class="order-note-input"
+                data-id="${p._id}"
+                placeholder="Write note..."
+                style="width:100%;min-height:26px;font-size:11px;"></textarea>
+    </td>
+
+    <td class="text-right">
+      <button class="primary order-add-btn" data-id="${p._id}">+</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// PLUS button
+tbody.querySelectorAll(".qty-btn-plus").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.id;
+    const input = document.querySelector(`.order-qty-input[data-id="${id}"]`);
+    input.value = Number(input.value) + 1;
+  });
+});
+
+// MINUS button
+tbody.querySelectorAll(".qty-btn-minus").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.id;
+    const input = document.querySelector(`.order-qty-input[data-id="${id}"]`);
+    input.value = Math.max(1, Number(input.value) - 1);
+  });
+});
+
+        tbody.querySelectorAll(".order-add-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const qtyInput = tbody.querySelector(
+              `.order-qty-input[data-id="${id}"]`
+            );
+            const noteInput = tbody.querySelector(
+              `.order-note-input[data-id="${id}"]`
+            );
+
+            const qty = Math.max(1, Number(qtyInput.value) || 1);
+            const note = (noteInput.value || "").trim();
+
+            const p = products.find((x) => x._id === id);
+            if (!p) return;
+
+            const mrp = Number(p.mrp) || 0;
+            const rawPrice = p.price != null ? p.price : p.salePrice;
+            const price = Number(rawPrice) || 0;
+
+            const existing = currentOrderItems.find(
+              (i) => i._id === id && (i.note || "") === note
+            );
+
+            if (existing) {
+              existing.qty += qty;
+            } else {
+              currentOrderItems.push({
+                _id: id,
+                name: p.name,
+                mrp,
+                price,
+                qty,
+                note,
+              });
+            }
+
+            renderOrderItems();
+          });
+        });
+      }
+
+      // -------- Cart ----------
+      function renderOrderItems() {
+        const tbody = document.getElementById("orderItemsTableBody");
+        const hint = document.getElementById("orderItemsHint");
+        tbody.innerHTML = "";
+
+        if (currentOrderItems.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="muted">Cart empty. Add from product list above.</td>
+            </tr>
+          `;
+          hint.textContent = "Cart empty.";
+          document.getElementById("orderTotal").textContent = "₹0.00";
+          return;
+        }
+
+        hint.textContent = `${currentOrderItems.length} item(s) in cart`;
+
+        let total = 0;
+        currentOrderItems.forEach((item, idx) => {
+          const line = item.price * item.qty;
+          total += line;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>
+              ${item.name}
+              ${
+                item.note
+                  ? `<div class="muted" style="font-size:11px;">${item.note}</div>`
+                  : ""
+              }
+            </td>
+            <td class="text-right">₹${item.mrp.toFixed(2)}</td>
+            <td class="text-right">₹${item.price.toFixed(2)}</td>
+            <td class="text-right">
+              <button class="qty-btn" data-idx="${idx}" data-op="-">-</button>
+              <span style="margin:0 6px;">${item.qty}</span>
+              <button class="qty-btn" data-idx="${idx}" data-op="+">+</button>
+            </td>
+            <td class="text-right">₹${line.toFixed(2)}</td>
+            <td class="text-right">
+              <button class="secondary" data-remove="${idx}">✖</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById(
+          "orderTotal"
+        ).textContent = `₹${total.toFixed(2)}`;
+
+        tbody.querySelectorAll(".qty-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.dataset.idx);
+            const op = btn.dataset.op;
+            if (op === "+") {
+              currentOrderItems[idx].qty += 1;
+            } else {
+              currentOrderItems[idx].qty = Math.max(
+                1,
+                currentOrderItems[idx].qty - 1
+              );
+            }
+            renderOrderItems();
+          });
+        });
+
+        tbody.querySelectorAll("button[data-remove]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.dataset.remove);
+            currentOrderItems.splice(idx, 1);
+            renderOrderItems();
+          });
+        });
+      }
+
+      // -------- Edit flow: load order into Place Order ----------
+      function startEditOrder(orderId) {
+        const order = orders.find((o) => o._id === orderId);
+        if (!order) return;
+
+        editingOrderId = orderId;
+
+        // shop select
+        document.getElementById("orderShopSearch").value = "";
+        renderOrderShopList();
+        if (order.shopId) {
+          document.getElementById("orderShopSelect").value = String(
+            order.shopId
+          );
+        }
+
+        // items -> cart
+        currentOrderItems = (order.items || []).map((it) => ({
+          _id: it.productId || "",
+          name: it.productName,
+          mrp: Number(it.mrp) || 0,
+          price: Number(it.price) || 0,
+          qty: Number(it.qty) || 1,
+          note: it.note || "",
+        }));
+
+        renderOrderItems();
+
+        // button text
+        document.getElementById("submitOrderBtn").textContent = "💾 Update Order";
+
+        // go to Place Order view
+        showView("place-order");
+      }
+
+      // -------- Orders – card layout with item-wise checkboxes ----------
+      function renderOrders() {
+        const container = document.getElementById("ordersCardsContainer");
+        container.innerHTML = "";
+
+        if (orders.length === 0) {
+          container.innerHTML =
+            '<div class="muted">No orders yet. Create some from "Place Order".</div>';
+          return;
+        }
+
+        orders.forEach((o) => {
+          const card = document.createElement("div");
+          card.className = "order-card";
+
+          const date = new Date(o.createdAt);
+          const total = Number(o.totalAmount || 0);
+
+          let headerHtml = `
+            <div class="flex-between">
+              <div>
+                <div class="order-header-line">
+                  Order #${String(o._id).slice(-6)}
+                  ${
+                    o.shopName
+                      ? `<span class="order-shop-pill">${o.shopName}</span>`
+                      : ""
+                  }
+                </div>
+                <div class="muted" style="font-size:11px;">
+                  ${date.toLocaleDateString()} , ${date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+                </div>
+              </div>
+              <div style="font-weight:600;font-size:14px;">₹${total.toFixed(
+                2
+              )}</div>
+            </div>
+          `;
+
+        let itemsHtml = "";
+        (o.items || []).forEach((it, idx) => {
+          const key = itemKey(o._id, idx);
+          const checked = selectedItemKeys.includes(key);
+          const mrp = Number(it.mrp || 0);
+          const price = Number(it.price || 0);
+          itemsHtml += `
+              <div class="order-item-row">
+                <input type="checkbox"
+                       class="order-item-checkbox"
+                       data-key="${key}"
+                       ${checked ? "checked" : ""} />
+                <div class="order-item-text">
+                  <b>${it.productName}</b> –
+                  <span style="color:#b91c1c;font-weight:600;">${
+                    it.qty
+                  }</span> × ₹${price.toFixed(2)}
+                  <span class="muted">(MRP ₹${mrp.toFixed(2)})</span>
+                </div>
+              </div>
+            `;
+        });
+
+        let statusTagClass = "pending";
+        if (o.status === "Delivered") statusTagClass = "delivered";
+        if (o.status === "Cancelled") statusTagClass = "cancelled";
+
+        const statusHtml = `
+            <div class="mt-4">
+              <span class="muted">Status:</span>
+              <span class="tag ${statusTagClass}">${o.status}</span>
+            </div>
+          `;
+
+        const actionsHtml = `
+            <div class="order-actions">
+              <button class="secondary order-edit-btn" data-id="${o._id}">
+                Edit
+              </button>
+              <button class="secondary order-delete-btn" data-id="${o._id}">
+                Delete
+              </button>
+            </div>
+          `;
+
+        card.innerHTML = headerHtml + itemsHtml + statusHtml + actionsHtml;
+        container.appendChild(card);
+      });
+
+      // checkbox listeners
+      container
+        .querySelectorAll(".order-item-checkbox")
+        .forEach((cb) => {
+          cb.addEventListener("change", () => {
+            const key = cb.dataset.key;
+            if (cb.checked) {
+              if (!selectedItemKeys.includes(key)) {
+                selectedItemKeys.push(key);
+              }
+            } else {
+              selectedItemKeys = selectedItemKeys.filter((k) => k !== key);
+            }
+            saveSelectedItemKeys(selectedItemKeys);
+          });
+        });
+
+      // Edit = open in Place Order
+      container.querySelectorAll(".order-edit-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          startEditOrder(id);
+        });
+      });
+
+      // Delete order
+      container.querySelectorAll(".order-delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          if (!confirm("Delete this order?")) return;
+          try {
+            await fetchJSON(API_BASE + `/api/orders/${id}`, {
+              method: "DELETE",
+            });
+            selectedItemKeys = selectedItemKeys.filter(
+              (k) => !k.startsWith(id + "::")
+            );
+            saveSelectedItemKeys(selectedItemKeys);
+            await loadOrders();
+          } catch (err) {
+            console.error(err);
+            alert("Error deleting order");
+          }
+        });
+      });
+    }
+
+    // bulk status using selected items
+    async function updateSelectedOrdersStatus(newStatus) {
+      const orderIds = Array.from(
+        new Set(selectedItemKeys.map((k) => k.split("::")[0]))
+      );
+
+      if (orderIds.length === 0) {
+        alert("No items selected");
+        return;
+      }
+
+      if (
+        !confirm(
+          `Change status of ${orderIds.length} order(s) to ${newStatus}?`
+        )
+      ) {
+        return;
+      }
+
+      try {
+        for (const id of orderIds) {
+          await fetchJSON(API_BASE + `/api/orders/${id}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+        }
+        selectedItemKeys = [];
+        saveSelectedItemKeys(selectedItemKeys);
+        await loadOrders();
+      } catch (err) {
+        console.error(err);
+        alert("Error updating status");
+      }
+    }
+
+    // -------- Event listeners ----------
+    document
+      .getElementById("shopSearchInput")
+      .addEventListener("input", renderShops);
+
+    document
+      .getElementById("productSearchInput")
+      .addEventListener("input", renderProducts);
+
+    document
+      .getElementById("orderProductSearch")
+      .addEventListener("input", renderOrderProductList);
+
+    document
+      .getElementById("orderShopSearch")
+      .addEventListener("input", renderOrderShopList);
+
+    document
+      .getElementById("addShopBtn")
+      .addEventListener("click", async () => {
+        const name = document.getElementById("shopNameInput").value.trim();
+        if (!name) {
+          alert("Shop name required");
+          return;
+        }
+        try {
+          const shop = await fetchJSON(API_BASE + "/api/shops", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+          shops.push(shop);
+          document.getElementById("shopNameInput").value = "";
+          renderShops();
+          populateShopSelects();
+          updateStats();
+        } catch (err) {
+          console.error(err);
+          alert("Error adding shop");
+        }
+      });
+
+    document
+      .getElementById("addProductBtn")
+      .addEventListener("click", async () => {
+        const name = document.getElementById("newProductName").value.trim();
+        const mrp = Number(
+          document.getElementById("newProductMrp").value || 0
+        );
+        const price = Number(
+          document.getElementById("newProductPrice").value || 0
+        );
+        if (!name || !mrp || !price) {
+          alert("Name, MRP, Price required");
+          return;
+        }
+        try {
+          const product = await fetchJSON(API_BASE + "/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, mrp, price }),
+          });
+          products.push(product);
+          document.getElementById("newProductName").value = "";
+          document.getElementById("newProductMrp").value = "";
+          document.getElementById("newProductPrice").value = "";
+          renderProducts();
+          renderOrderProductList();
+          updateStats();
+        } catch (err) {
+          console.error(err);
+          alert("Error adding product");
+        }
+      });
+
+    document
+      .getElementById("resetOrderBtn")
+      .addEventListener("click", () => {
+        if (
+          currentOrderItems.length === 0 ||
+          confirm("Clear selected items?")
+        ) {
+          currentOrderItems = [];
+          editingOrderId = null;
+          document.getElementById("submitOrderBtn").textContent =
+            "✅ Submit Order";
+          renderOrderItems();
+        }
+      });
+
+    document
+      .getElementById("submitOrderBtn")
+      .addEventListener("click", async () => {
+        const shopId = document.getElementById("orderShopSelect").value;
+        if (!shopId) {
+          alert("Please select a shop");
+          return;
+        }
+        if (currentOrderItems.length === 0) {
+          alert("Please add at least one product");
+          return;
+        }
+        const shop = shops.find((s) => s._id === shopId);
+        const payload = {
+          shopId,
+          shopName: shop ? shop.name : "",
+          items: currentOrderItems.map((i) => ({
+            productId: i._id || null,
+            productName: i.name,
+            mrp: i.mrp,
+            price: i.price,
+            qty: i.qty,
+            note: i.note || "",
+          })),
+        };
+
+        const isEditing = !!editingOrderId;
+        const url = isEditing
+          ? API_BASE + `/api/orders/${editingOrderId}`
+          : API_BASE + "/api/orders";
+        const method = isEditing ? "PUT" : "POST";
+
+        try {
+          const btn = document.getElementById("submitOrderBtn");
+          btn.disabled = true;
+
+          const order = await fetchJSON(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (isEditing) {
+            const idx = orders.findIndex((o) => o._id === editingOrderId);
+            if (idx !== -1) orders[idx] = order;
+            editingOrderId = null;
+            btn.textContent = "✅ Submit Order";
+            alert("Order updated successfully");
+          } else {
+            orders.unshift(order);
+            alert("Order created successfully");
+          }
+
+          currentOrderItems = [];
+          renderOrderItems();
+          renderOrders();
+          updateStats();
+          showView("orders");
+        } catch (err) {
+          console.error(err);
+          alert("Error saving order");
+        } finally {
+          document.getElementById("submitOrderBtn").disabled = false;
+        }
+      });
+
+    document
+      .getElementById("filterShopSelect")
+      .addEventListener("change", loadOrders);
+    document
+      .getElementById("filterStatusSelect")
+      .addEventListener("change", loadOrders);
+    document
+      .getElementById("refreshOrdersBtn")
+      .addEventListener("click", loadOrders);
+
+    document
+      .getElementById("markDeliveredBtn")
+      .addEventListener("click", () =>
+        updateSelectedOrdersStatus("Delivered")
+      );
+    document
+      .getElementById("markCancelledBtn")
+      .addEventListener("click", () =>
+        updateSelectedOrdersStatus("Cancelled")
+      );
+
+    document
+      .getElementById("clearSelectionsBtn")
+      .addEventListener("click", () => {
+        if (!confirm("Clear all tick marks (browser only)?")) return;
+        selectedItemKeys = [];
+        saveSelectedItemKeys(selectedItemKeys);
+        renderOrders();
+      });
+
+    // -------- Init ----------
+    async function init() {
+      try {
+        await Promise.all([loadShops(), loadProducts(), loadOrders()]);
+        renderOrderItems();
+      } catch (err) {
+        console.error("Init error", err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
