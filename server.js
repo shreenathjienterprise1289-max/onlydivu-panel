@@ -7,7 +7,7 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 👉 Yaha apna MongoDB connection string daalo
+// IMPORTANT: prefer setting process.env.MONGODB_URI in your deployment platform
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb+srv://divuweb:divuweb@divu.knr0qmd.mongodb.net/?appName=Divu";
@@ -15,16 +15,16 @@ const MONGODB_URI =
 app.use(cors());
 app.use(express.json());
 
-// Static files serve karne ke liye (index.html, CSS, JS, etc.)
+// NOTE: in production it's safer to serve a 'public' folder only.
+// app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname)));
 
-// ----- MongoDB Connect -----
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ----- Schemas -----
+// Schemas
 const shopSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   createdAt: { type: Date, default: Date.now },
@@ -33,7 +33,9 @@ const shopSchema = new mongoose.Schema({
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   mrp: { type: Number, required: true },
-  price: { type: Number, required: true }, // Naye products ke liye
+  // Accept either 'price' (new) or 'salePrice' (legacy). Make price optional.
+  price: { type: Number }, 
+  salePrice: { type: Number },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -44,7 +46,7 @@ const orderItemSchema = new mongoose.Schema({
   price: Number,
   qty: Number,
   lineTotal: Number,
-  note: String,
+  note: { type: String, default: "" },
 });
 
 const orderSchema = new mongoose.Schema({
@@ -65,8 +67,6 @@ const Product = mongoose.model("Product", productSchema);
 const Order = mongoose.model("Order", orderSchema);
 
 // ---------- SHOP ROUTES ----------
-
-// Get all shops
 app.get("/api/shops", async (req, res) => {
   try {
     const shops = await Shop.find().sort({ name: 1 });
@@ -77,13 +77,10 @@ app.get("/api/shops", async (req, res) => {
   }
 });
 
-// Add shop
 app.post("/api/shops", async (req, res) => {
   try {
     const { name } = req.body;
-    if (!name || !name.trim()) {
-      return res.status(400).json({ message: "Shop name is required" });
-    }
+    if (!name || !name.trim()) return res.status(400).json({ message: "Shop name is required" });
     const shop = new Shop({ name: name.trim() });
     await shop.save();
     res.status(201).json(shop);
@@ -94,8 +91,6 @@ app.post("/api/shops", async (req, res) => {
 });
 
 // ---------- PRODUCT ROUTES ----------
-
-// Get all products
 app.get("/api/products", async (req, res) => {
   try {
     const products = await Product.find().sort({ name: 1 });
@@ -106,20 +101,19 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
-// Add product
+// Add product — accept price OR salePrice
 app.post("/api/products", async (req, res) => {
   try {
-    const { name, mrp, price } = req.body;
-    if (!name || mrp == null || price == null) {
-      return res
-        .status(400)
-        .json({ message: "Name, MRP and price are required" });
+    const { name, mrp, price, salePrice } = req.body;
+    if (!name || mrp == null) {
+      return res.status(400).json({ message: "Name and MRP are required" });
     }
 
     const product = new Product({
       name: name.trim(),
       mrp: Number(mrp),
-      price: Number(price),
+      price: price != null ? Number(price) : undefined,
+      salePrice: salePrice != null ? Number(salePrice) : undefined,
     });
 
     await product.save();
@@ -131,7 +125,6 @@ app.post("/api/products", async (req, res) => {
 });
 
 // ---------- ORDER HELP ----------
-
 function buildParsedItems(items = []) {
   const parsedItems = items.map((item) => {
     const qty = Number(item.qty) || 1;
@@ -147,34 +140,20 @@ function buildParsedItems(items = []) {
     };
   });
 
-  const totalAmount = parsedItems.reduce(
-    (sum, it) => sum + (it.lineTotal || 0),
-    0
-  );
-
+  const totalAmount = parsedItems.reduce((sum, it) => sum + (it.lineTotal || 0), 0);
   return { parsedItems, totalAmount };
 }
 
 // ---------- ORDER ROUTES ----------
-
-// Create order
 app.post("/api/orders", async (req, res) => {
   try {
     const { shopId, shopName, items } = req.body;
-
     if (!shopId || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Shop and items are required" });
     }
 
     const { parsedItems, totalAmount } = buildParsedItems(items);
-
-    const order = new Order({
-      shopId,
-      shopName,
-      items: parsedItems,
-      totalAmount,
-    });
-
+    const order = new Order({ shopId, shopName, items: parsedItems, totalAmount });
     await order.save();
     res.status(201).json(order);
   } catch (err) {
@@ -183,32 +162,17 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
-// Update entire order (Edit)
 app.put("/api/orders/:id", async (req, res) => {
   try {
     const { shopId, shopName, items } = req.body;
-
     if (!shopId || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Shop and items are required" });
     }
 
     const { parsedItems, totalAmount } = buildParsedItems(items);
+    const order = await Order.findByIdAndUpdate(req.params.id, { shopId, shopName, items: parsedItems, totalAmount }, { new: true });
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      {
-        shopId,
-        shopName,
-        items: parsedItems,
-        totalAmount,
-      },
-      { new: true }
-    );
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
+    if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (err) {
     console.error(err);
@@ -216,14 +180,12 @@ app.put("/api/orders/:id", async (req, res) => {
   }
 });
 
-// Get all orders (optional filters: ?shopId=&status=)
 app.get("/api/orders", async (req, res) => {
   try {
     const { shopId, status } = req.query;
     const filter = {};
     if (shopId) filter.shopId = shopId;
     if (status) filter.status = status;
-
     const orders = await Order.find(filter).sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
@@ -232,24 +194,14 @@ app.get("/api/orders", async (req, res) => {
   }
 });
 
-// Update order status only
 app.patch("/api/orders/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
     if (!["Pending", "Delivered", "Cancelled"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
-
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
+    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (err) {
     console.error(err);
@@ -257,42 +209,26 @@ app.patch("/api/orders/:id/status", async (req, res) => {
   }
 });
 
-// ✅ Delete order (error aaya to bhi 200 bhejenge taaki front-end fail na ho)
 app.delete("/api/orders/:id", async (req, res) => {
   const id = String(req.params.id || "").trim();
   console.log("🗑️ Delete request for order:", id);
-
   try {
     const result = await Order.deleteOne({ _id: id });
-    console.log("Delete result:", result);
-    // result.deletedCount === 0 ho to bhi 200 hi bhej rahe
-    return res.json({
-      message:
-        result.deletedCount > 0
-          ? "Order deleted"
-          : "Order not found or already deleted",
-      deletedCount: result.deletedCount,
-    });
+    if (result.deletedCount > 0) {
+      return res.json({ message: "Order deleted", deletedCount: result.deletedCount });
+    } else {
+      return res.status(404).json({ message: "Order not found", deletedCount: 0 });
+    }
   } catch (err) {
     console.error("Delete error:", err);
-    // Yaha bhi 200 hi bhejenge, sirf message alag
-    return res.json({
-      message: "Error while deleting, but request received",
-      error: String(err),
-    });
+    return res.status(500).json({ message: "Error while deleting", error: String(err) });
   }
 });
 
-// ---------- FRONTEND ROUTES ----------
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
+// Frontend
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.get("/index.html", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
-app.get("/index.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// ---------- START SERVER ----------
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
