@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 // IMPORTANT: prefer setting process.env.MONGODB_URI in your deployment platform
 const MONGODB_URI =
   process.env.MONGODB_URI ||
-  "mongodb+srv://divuweb:divuweb@divu.knr0qmd.mongodb.net/?appName=Divu";
+"mongodb+srv://divuweb:divuweb@divu.knr0qmd.mongodb.net/?appName=Divu";
 
 app.use(cors());
 app.use(express.json());
