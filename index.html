@@ -1047,878 +1047,844 @@ tr:hover td {
       </main>
     </div>
 
-    <script>
-      const API_BASE = " ";
+<script>
+  // ----------------- Config -----------------
+  // Smart API base: use localhost when running locally, otherwise same origin (empty string)
+  const API_BASE =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://localhost:3000"
+      : "";
 
-      let shops = [];
-      let products = [];
-      let orders = [];
-      let currentOrderItems = [];
-      let editingOrderId = null; // agar null nahi hai to edit-mode
+  let shops = [];
+  let products = [];
+  let orders = [];
+  let currentOrderItems = [];
+  let editingOrderId = null; // if not null -> edit-mode
 
-      // -------- Item-wise selection (localStorage) ----------
-      const SELECTED_ITEMS_KEY = "selectedOrderItems";
+  // -------- Item-wise selection (localStorage) ----------
+  const SELECTED_ITEMS_KEY = "selectedOrderItems";
 
-      function loadSelectedItemKeys() {
-        try {
-          return JSON.parse(localStorage.getItem(SELECTED_ITEMS_KEY) || "[]");
-        } catch {
-          return [];
-        }
-      }
+  function loadSelectedItemKeys() {
+    try {
+      return JSON.parse(localStorage.getItem(SELECTED_ITEMS_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  }
 
-      function saveSelectedItemKeys(keys) {
-        localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(keys));
-      }
+  function saveSelectedItemKeys(keys) {
+    try {
+      localStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify(keys));
+    } catch {
+      // ignore quota errors
+    }
+  }
 
-      let selectedItemKeys = loadSelectedItemKeys();
+  let selectedItemKeys = loadSelectedItemKeys();
 
-      function itemKey(orderId, index) {
-        return `${orderId}::${index}`;
-      }
+  function itemKey(orderId, index) {
+    return `${orderId}::${index}`;
+  }
 
-      const navButtons = document.querySelectorAll(".nav button");
-      const views = document.querySelectorAll(".view");
-      const sidebar = document.getElementById("sidebar");
-      const overlay = document.getElementById("overlay");
-      const mobileNavBtn = document.getElementById("mobileNavBtn");
+  // ----------------- UI refs -----------------
+  const navButtons = document.querySelectorAll(".nav button");
+  const views = document.querySelectorAll(".view");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  const mobileNavBtn = document.getElementById("mobileNavBtn");
 
-      function showView(viewName) {
-        views.forEach((v) =>
-          v.id === "view-" + viewName
-            ? v.classList.add("active")
-            : v.classList.remove("active")
-        );
-        navButtons.forEach((btn) => {
-          btn.dataset.view === viewName
-            ? btn.classList.add("active")
-            : btn.classList.remove("active");
-        });
-        if (window.innerWidth <= 900) {
-          sidebar.classList.remove("open");
-          overlay.classList.remove("show");
-        }
+  function showView(viewName) {
+    views.forEach((v) =>
+      v.id === "view-" + viewName ? v.classList.add("active") : v.classList.remove("active")
+    );
+    navButtons.forEach((btn) => {
+      btn.dataset.view === viewName ? btn.classList.add("active") : btn.classList.remove("active");
+    });
+    if (window.innerWidth <= 900) {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("show");
+    }
 
-        // Place order pe aate time agar edit mode nahi hai to button text reset
-        if (viewName === "place-order" && !editingOrderId) {
-          document.getElementById("submitOrderBtn").textContent =
-            "✅ Submit Order";
-        }
-      }
+    // Place order view: reset button text if not editing
+    if (viewName === "place-order" && !editingOrderId) {
+      const sb = document.getElementById("submitOrderBtn");
+      if (sb) sb.textContent = "✅ Submit Order";
+    }
+  }
 
-      navButtons.forEach((btn) => {
-        btn.addEventListener("click", () => showView(btn.dataset.view));
-      });
-
-      mobileNavBtn.addEventListener("click", () => {
-        sidebar.classList.add("open");
-        overlay.classList.add("show");
-      });
-      overlay.addEventListener("click", () => {
-        sidebar.classList.remove("open");
-        overlay.classList.remove("show");
-      });
-
-      async function fetchJSON(url, options = {}) {
-        const res = await fetch(url, options);
-        if (!res.ok) {
-          throw new Error("Request failed: " + res.status);
-        }
-        return res.json();
-      }
-
-      async function loadShops() {
-        try {
-          shops = await fetchJSON(API_BASE + "/api/shops");
-          renderShops();
-          populateShopSelects();
-          updateStats();
-        } catch (err) {
-          console.error(err);
-          alert("Error loading shops");
-        }
-      }
-
-      async function loadProducts() {
-        try {
-          products = await fetchJSON(API_BASE + "/api/products");
-          renderProducts();
-          renderOrderProductList();
-          updateStats();
-        } catch (err) {
-          console.error(err);
-          alert("Error loading products");
-        }
-      }
-
-      async function loadOrders() {
-        try {
-          const params = new URLSearchParams();
-          const shopId = document.getElementById("filterShopSelect").value;
-          const status = document.getElementById("filterStatusSelect").value;
-          if (shopId) params.append("shopId", shopId);
-          if (status) params.append("status", status);
-
-          const url =
-            API_BASE + "/api/orders" + (params.toString() ? "?" + params : "");
-
-          orders = await fetchJSON(url);
-          renderOrders();
-          updateStats();
-        } catch (err) {
-          console.error(err);
-          alert("Error loading orders");
-        }
-      }
-
-      // -------- Stats ----------
-      function updateStats() {
-        document.getElementById("statShops").textContent = shops.length;
-        document.getElementById(
-          "shopsCountChip"
-        ).textContent = `${shops.length} shops`;
-
-        document.getElementById("statProducts").textContent = products.length;
-        document.getElementById(
-          "productsCountChip"
-        ).textContent = `${products.length} products`;
-
-        const pending = orders.filter((o) => o.status === "Pending").length;
-        document.getElementById("statPending").textContent = pending;
-        document.getElementById(
-          "ordersCountChip"
-        ).textContent = `${orders.length} orders`;
-
-        document.getElementById("statShopsSub").textContent =
-          shops.length === 0
-            ? "Add your first shop"
-            : "Shops ready for orders";
-        document.getElementById("statProductsSub").textContent =
-          products.length === 0
-            ? "Bulk import from JSON"
-            : "Searchable in panel";
-        document.getElementById("statPendingSub").textContent =
-          pending === 0 ? "No pending orders" : "Waiting to deliver";
-      }
-
-      // -------- Shops (with search) ----------
-      function renderShops() {
-        const tbody = document.getElementById("shopsTableBody");
-        const searchInput = document.getElementById("shopSearchInput");
-        const search = searchInput
-          ? searchInput.value.toLowerCase()
-          : "".toLowerCase();
-
-        tbody.innerHTML = "";
-
-        if (shops.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="3" class="muted">No shops yet. Add from above form.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        const filtered = shops.filter((shop) =>
-          (shop.name || "").toLowerCase().includes(search)
-        );
-
-        if (filtered.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="3" class="muted">No shops found for this search.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        filtered.forEach((shop, idx) => {
-          const tr = document.createElement("tr");
-          const created = new Date(shop.createdAt);
-          tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td>${shop.name}</td>
-            <td>${created.toLocaleDateString()}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-
-      function populateShopSelects() {
-        const filterShopSelect = document.getElementById("filterShopSelect");
-        filterShopSelect.innerHTML = '<option value="">All shops</option>';
-
-        shops.forEach((shop) => {
-          const opt2 = document.createElement("option");
-          opt2.value = shop._id;
-          opt2.textContent = shop.name;
-          filterShopSelect.appendChild(opt2);
-        });
-
-        renderOrderShopList();
-      }
-
-      function renderOrderShopList() {
-        const search = (
-          document.getElementById("orderShopSearch").value || ""
-        ).toLowerCase();
-        const select = document.getElementById("orderShopSelect");
-
-        select.innerHTML = '<option value="">-- Select shop --</option>';
-
-        shops
-          .filter((s) => (s.name || "").toLowerCase().includes(search))
-          .forEach((s) => {
-            const opt = document.createElement("option");
-            opt.value = s._id;
-            opt.textContent = s.name;
-            select.appendChild(opt);
-          });
-      }
-
-      // -------- Products tab ----------
-      function renderProducts() {
-        const tbody = document.getElementById("productsTableBody");
-        const search = document
-          .getElementById("productSearchInput")
-          .value.toLowerCase();
-        const filtered = products.filter((p) =>
-          (p.name || "").toLowerCase().includes(search)
-        );
-
-        tbody.innerHTML = "";
-        if (filtered.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="3" class="muted">No products found for this search.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        filtered.forEach((p) => {
-          const mrp = Number(p.mrp) || 0;
-          const rawPrice = p.price != null ? p.price : p.salePrice;
-          const price = Number(rawPrice) || 0;
-
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${p.name}</td>
-            <td class="text-right">₹${mrp.toFixed(2)}</td>
-            <td class="text-right">₹${price.toFixed(2)}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-
-      // -------- Place Order: product list ----------
-      function renderOrderProductList() {
-        const tbody = document.getElementById("orderProductsTableBody");
-        const q = document
-          .getElementById("orderProductSearch")
-          .value.toLowerCase();
-
-        const filtered = products.filter((p) =>
-          (p.name || "").toLowerCase().includes(q)
-        );
-
-        tbody.innerHTML = "";
-
-        if (filtered.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="muted">No products found for this search.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        filtered.forEach((p) => {
-  const mrp = Number(p.mrp) || 0;
-  const rawPrice = p.price != null ? p.price : p.salePrice;
-  const price = Number(rawPrice) || 0;
-
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${p.name}</td>
-    <td class="text-right">₹${mrp.toFixed(2)}</td>
-    <td class="text-right">₹${price.toFixed(2)}</td>
-
-    <td class="text-right">
-      <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;">
-        <button class="qty-btn-minus" 
-                data-id="${p._id}"
-                style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;background:#f5f5f5;cursor:pointer;">−</button>
-
-        <input type="number" min="1" value="1"
-               class="order-qty-input"
-               data-id="${p._id}"
-               style="width:50px;padding:4px 6px;border-radius:8px;text-align:center;border:1px solid #d1d5db;" />
-
-        <button class="qty-btn-plus"
-                data-id="${p._id}"
-                style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;background:#f5f5f5;cursor:pointer;">+</button>
-      </div>
-    </td>
-
-    <td>
-      <textarea class="order-note-input"
-                data-id="${p._id}"
-                placeholder="Write note..."
-                style="width:100%;min-height:26px;font-size:11px;"></textarea>
-    </td>
-
-    <td class="text-right">
-      <button class="primary order-add-btn" data-id="${p._id}">+</button>
-    </td>
-  `;
-  tbody.appendChild(tr);
-});
-
-// PLUS button
-tbody.querySelectorAll(".qty-btn-plus").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const input = document.querySelector(`.order-qty-input[data-id="${id}"]`);
-    input.value = Number(input.value) + 1;
+  navButtons.forEach((btn) => {
+    btn.addEventListener("click", () => showView(btn.dataset.view));
   });
-});
 
-// MINUS button
-tbody.querySelectorAll(".qty-btn-minus").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const input = document.querySelector(`.order-qty-input[data-id="${id}"]`);
-    input.value = Math.max(1, Number(input.value) - 1);
-  });
-});
+  if (mobileNavBtn) {
+    mobileNavBtn.addEventListener("click", () => {
+      sidebar.classList.add("open");
+      overlay.classList.add("show");
+    });
+  }
+  if (overlay) {
+    overlay.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("show");
+    });
+  }
 
-        tbody.querySelectorAll(".order-add-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const qtyInput = tbody.querySelector(
-              `.order-qty-input[data-id="${id}"]`
-            );
-            const noteInput = tbody.querySelector(
-              `.order-note-input[data-id="${id}"]`
-            );
+  // ----------------- Fetch helpers -----------------
+  async function fetchJSON(url, options = {}) {
+    const res = await fetch(url, options);
+    // Try to parse JSON always (if possible) to return helpful message
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+    if (!res.ok) {
+      const msg = (json && (json.message || json.error)) || `Request failed: ${res.status}`;
+      const e = new Error(msg);
+      e.status = res.status;
+      e.body = json;
+      throw e;
+    }
+    return json;
+  }
 
-            const qty = Math.max(1, Number(qtyInput.value) || 1);
-            const note = (noteInput.value || "").trim();
+  // ----------------- Loaders -----------------
+  async function loadShops() {
+    try {
+      shops = await fetchJSON(API_BASE + "/api/shops");
+      renderShops();
+      populateShopSelects();
+      updateStats();
+    } catch (err) {
+      console.error("Error loading shops", err);
+      // don't spam user if running first time; show minimal alert
+      alert("Error loading shops. See console for details.");
+    }
+  }
 
-            const p = products.find((x) => x._id === id);
-            if (!p) return;
+  async function loadProducts() {
+    try {
+      products = await fetchJSON(API_BASE + "/api/products");
+      renderProducts();
+      renderOrderProductList();
+      updateStats();
+    } catch (err) {
+      console.error("Error loading products", err);
+      alert("Error loading products. See console for details.");
+    }
+  }
 
-            const mrp = Number(p.mrp) || 0;
-            const rawPrice = p.price != null ? p.price : p.salePrice;
-            const price = Number(rawPrice) || 0;
+  async function loadOrders() {
+    try {
+      const params = new URLSearchParams();
+      const shopIdElem = document.getElementById("filterShopSelect");
+      const shopId = shopIdElem ? shopIdElem.value : "";
+      const statusElem = document.getElementById("filterStatusSelect");
+      const status = statusElem ? statusElem.value : "";
 
-            const existing = currentOrderItems.find(
-              (i) => i._id === id && (i.note || "") === note
-            );
+      if (shopId) params.append("shopId", shopId);
+      if (status) params.append("status", status);
 
-            if (existing) {
-              existing.qty += qty;
-            } else {
-              currentOrderItems.push({
-                _id: id,
-                name: p.name,
-                mrp,
-                price,
-                qty,
-                note,
-              });
-            }
+      const url = API_BASE + "/api/orders" + (params.toString() ? "?" + params : "");
+      orders = await fetchJSON(url);
+      renderOrders();
+      updateStats();
+    } catch (err) {
+      console.error("Error loading orders", err);
+      alert("Error loading orders. See console for details.");
+    }
+  }
 
-            renderOrderItems();
+  // ----------------- Stats -----------------
+  function updateStats() {
+    const elStatShops = document.getElementById("statShops");
+    if (elStatShops) elStatShops.textContent = shops.length;
+    const elShopsChip = document.getElementById("shopsCountChip");
+    if (elShopsChip) elShopsChip.textContent = `${shops.length} shops`;
+
+    const elStatProducts = document.getElementById("statProducts");
+    if (elStatProducts) elStatProducts.textContent = products.length;
+    const elProductsChip = document.getElementById("productsCountChip");
+    if (elProductsChip) elProductsChip.textContent = `${products.length} products`;
+
+    const pending = orders.filter((o) => o.status === "Pending").length;
+    const elStatPending = document.getElementById("statPending");
+    if (elStatPending) elStatPending.textContent = pending;
+    const elOrdersChip = document.getElementById("ordersCountChip");
+    if (elOrdersChip) elOrdersChip.textContent = `${orders.length} orders`;
+
+    const s1 = document.getElementById("statShopsSub");
+    if (s1) s1.textContent = shops.length === 0 ? "Add your first shop" : "Shops ready for orders";
+    const s2 = document.getElementById("statProductsSub");
+    if (s2) s2.textContent = products.length === 0 ? "Bulk import from JSON" : "Searchable in panel";
+    const s3 = document.getElementById("statPendingSub");
+    if (s3) s3.textContent = pending === 0 ? "No pending orders" : "Waiting to deliver";
+  }
+
+  // ----------------- Shops (with search) -----------------
+  function renderShops() {
+    const tbody = document.getElementById("shopsTableBody");
+    if (!tbody) return;
+    const searchInput = document.getElementById("shopSearchInput");
+    const search = searchInput ? (searchInput.value || "").toLowerCase() : "";
+
+    tbody.innerHTML = "";
+
+    if (!shops || shops.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3" class="muted">No shops yet. Add from above form.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    const filtered = shops.filter((shop) => (shop.name || "").toLowerCase().includes(search));
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3" class="muted">No shops found for this search.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    filtered.forEach((shop, idx) => {
+      const tr = document.createElement("tr");
+      const created = new Date(shop.createdAt);
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td>${shop.name}</td>
+        <td>${created.toLocaleDateString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function populateShopSelects() {
+    const filterShopSelect = document.getElementById("filterShopSelect");
+    if (filterShopSelect) {
+      filterShopSelect.innerHTML = '<option value="">All shops</option>';
+      shops.forEach((shop) => {
+        const opt = document.createElement("option");
+        opt.value = shop._id;
+        opt.textContent = shop.name;
+        filterShopSelect.appendChild(opt);
+      });
+    }
+    renderOrderShopList();
+  }
+
+  function renderOrderShopList() {
+    const searchElem = document.getElementById("orderShopSearch");
+    const search = searchElem ? (searchElem.value || "").toLowerCase() : "";
+    const select = document.getElementById("orderShopSelect");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Select shop --</option>';
+
+    shops
+      .filter((s) => (s.name || "").toLowerCase().includes(search))
+      .forEach((s) => {
+        const opt = document.createElement("option");
+        opt.value = s._id;
+        opt.textContent = s.name;
+        select.appendChild(opt);
+      });
+  }
+
+  // ----------------- Products tab -----------------
+  function renderProducts() {
+    const tbody = document.getElementById("productsTableBody");
+    if (!tbody) return;
+    const searchEl = document.getElementById("productSearchInput");
+    const search = searchEl ? (searchEl.value || "").toLowerCase() : "";
+    const filtered = products.filter((p) => (p.name || "").toLowerCase().includes(search));
+
+    tbody.innerHTML = "";
+    if (!filtered || filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3" class="muted">No products found for this search.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    filtered.forEach((p) => {
+      const mrp = Number(p.mrp) || 0;
+      const rawPrice = p.price != null ? p.price : p.salePrice;
+      const price = Number(rawPrice) || 0;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.name}</td>
+        <td class="text-right">₹${mrp.toFixed(2)}</td>
+        <td class="text-right">₹${price.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ----------------- Place Order: product list -----------------
+  function renderOrderProductList() {
+    const tbody = document.getElementById("orderProductsTableBody");
+    if (!tbody) return;
+    const qElem = document.getElementById("orderProductSearch");
+    const q = qElem ? (qElem.value || "").toLowerCase() : "";
+
+    const filtered = products.filter((p) => (p.name || "").toLowerCase().includes(q));
+
+    tbody.innerHTML = "";
+
+    if (!filtered || filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="muted">No products found for this search.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    filtered.forEach((p) => {
+      const mrp = Number(p.mrp) || 0;
+      const rawPrice = p.price != null ? p.price : p.salePrice;
+      const price = Number(rawPrice) || 0;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.name}</td>
+        <td class="text-right">₹${mrp.toFixed(2)}</td>
+        <td class="text-right">₹${price.toFixed(2)}</td>
+
+        <td class="text-right">
+          <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;">
+            <button class="qty-btn-minus" 
+                    data-id="${p._id}"
+                    style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;background:#f5f5f5;cursor:pointer;">−</button>
+
+            <input type="number" min="1" value="1"
+                   class="order-qty-input"
+                   data-id="${p._id}"
+                   style="width:50px;padding:4px 6px;border-radius:8px;text-align:center;border:1px solid #d1d5db;" />
+
+            <button class="qty-btn-plus"
+                    data-id="${p._id}"
+                    style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;background:#f5f5f5;cursor:pointer;">+</button>
+          </div>
+        </td>
+
+        <td>
+          <textarea class="order-note-input"
+                    data-id="${p._id}"
+                    placeholder="Write note..."
+                    style="width:100%;min-height:26px;font-size:11px;"></textarea>
+        </td>
+
+        <td class="text-right">
+          <button class="primary order-add-btn" data-id="${p._id}">+</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Attach plus/minus listeners (delegated via the tbody)
+    tbody.querySelectorAll(".qty-btn-plus").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const input = document.querySelector(`.order-qty-input[data-id="${id}"]`);
+        if (input) input.value = Number(input.value || 0) + 1;
+      });
+    });
+
+    tbody.querySelectorAll(".qty-btn-minus").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const input = document.querySelector(`.order-qty-input[data-id="${id}"]`);
+        if (input) input.value = Math.max(1, Number(input.value || 1) - 1);
+      });
+    });
+
+    // Add-to-cart (save note, qty)
+    tbody.querySelectorAll(".order-add-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const qtyInput = tbody.querySelector(`.order-qty-input[data-id="${id}"]`);
+        const noteInput = tbody.querySelector(`.order-note-input[data-id="${id}"]`);
+
+        const qty = Math.max(1, Number(qtyInput ? qtyInput.value : 1) || 1);
+        const note = (noteInput ? noteInput.value : "").trim();
+
+        const p = products.find((x) => x._id === id);
+        if (!p) return;
+
+        const mrp = Number(p.mrp) || 0;
+        const rawPrice = p.price != null ? p.price : p.salePrice;
+        const price = Number(rawPrice) || 0;
+
+        // if same product+note exists, increase qty; otherwise push new entry
+        const existing = currentOrderItems.find((i) => i._id === id && (i.note || "") === note);
+        if (existing) {
+          existing.qty += qty;
+        } else {
+          currentOrderItems.push({
+            _id: id,
+            name: p.name,
+            mrp,
+            price,
+            qty,
+            note,
           });
-        });
-      }
-
-      // -------- Cart ----------
-      function renderOrderItems() {
-        const tbody = document.getElementById("orderItemsTableBody");
-        const hint = document.getElementById("orderItemsHint");
-        tbody.innerHTML = "";
-
-        if (currentOrderItems.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="muted">Cart empty. Add from product list above.</td>
-            </tr>
-          `;
-          hint.textContent = "Cart empty.";
-          document.getElementById("orderTotal").textContent = "₹0.00";
-          return;
         }
-
-        hint.textContent = `${currentOrderItems.length} item(s) in cart`;
-
-        let total = 0;
-        currentOrderItems.forEach((item, idx) => {
-          const line = item.price * item.qty;
-          total += line;
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>
-              ${item.name}
-              ${
-                item.note
-                  ? `<div class="muted" style="font-size:11px;">${item.note}</div>`
-                  : ""
-              }
-            </td>
-            <td class="text-right">₹${item.mrp.toFixed(2)}</td>
-            <td class="text-right">₹${item.price.toFixed(2)}</td>
-            <td class="text-right">
-              <button class="qty-btn" data-idx="${idx}" data-op="-">-</button>
-              <span style="margin:0 6px;">${item.qty}</span>
-              <button class="qty-btn" data-idx="${idx}" data-op="+">+</button>
-            </td>
-            <td class="text-right">₹${line.toFixed(2)}</td>
-            <td class="text-right">
-              <button class="secondary" data-remove="${idx}">✖</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById(
-          "orderTotal"
-        ).textContent = `₹${total.toFixed(2)}`;
-
-        tbody.querySelectorAll(".qty-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const idx = Number(btn.dataset.idx);
-            const op = btn.dataset.op;
-            if (op === "+") {
-              currentOrderItems[idx].qty += 1;
-            } else {
-              currentOrderItems[idx].qty = Math.max(
-                1,
-                currentOrderItems[idx].qty - 1
-              );
-            }
-            renderOrderItems();
-          });
-        });
-
-        tbody.querySelectorAll("button[data-remove]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const idx = Number(btn.dataset.remove);
-            currentOrderItems.splice(idx, 1);
-            renderOrderItems();
-          });
-        });
-      }
-
-      // -------- Edit flow: load order into Place Order ----------
-      function startEditOrder(orderId) {
-        const order = orders.find((o) => o._id === orderId);
-        if (!order) return;
-
-        editingOrderId = orderId;
-
-        // shop select
-        document.getElementById("orderShopSearch").value = "";
-        renderOrderShopList();
-        if (order.shopId) {
-          document.getElementById("orderShopSelect").value = String(
-            order.shopId
-          );
-        }
-
-        // items -> cart
-        currentOrderItems = (order.items || []).map((it) => ({
-          _id: it.productId || "",
-          name: it.productName,
-          mrp: Number(it.mrp) || 0,
-          price: Number(it.price) || 0,
-          qty: Number(it.qty) || 1,
-          note: it.note || "",
-        }));
 
         renderOrderItems();
-
-        // button text
-        document.getElementById("submitOrderBtn").textContent = "💾 Update Order";
-
-        // go to Place Order view
-        showView("place-order");
-      }
-
-      // -------- Orders – card layout with item-wise checkboxes ----------
-      function renderOrders() {
-        const container = document.getElementById("ordersCardsContainer");
-        container.innerHTML = "";
-
-        if (orders.length === 0) {
-          container.innerHTML =
-            '<div class="muted">No orders yet. Create some from "Place Order".</div>';
-          return;
-        }
-
-        orders.forEach((o) => {
-          const card = document.createElement("div");
-          card.className = "order-card";
-
-          const date = new Date(o.createdAt);
-          const total = Number(o.totalAmount || 0);
-
-          let headerHtml = `
-            <div class="flex-between">
-              <div>
-                <div class="order-header-line">
-                  Order #${String(o._id).slice(-6)}
-                  ${
-                    o.shopName
-                      ? `<span class="order-shop-pill">${o.shopName}</span>`
-                      : ""
-                  }
-                </div>
-                <div class="muted" style="font-size:11px;">
-                  ${date.toLocaleDateString()} , ${date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-                </div>
-              </div>
-              <div style="font-weight:600;font-size:14px;">₹${total.toFixed(
-                2
-              )}</div>
-            </div>
-          `;
-
-        let itemsHtml = "";
-        (o.items || []).forEach((it, idx) => {
-          const key = itemKey(o._id, idx);
-          const checked = selectedItemKeys.includes(key);
-          const mrp = Number(it.mrp || 0);
-          const price = Number(it.price || 0);
-          itemsHtml += `
-              <div class="order-item-row">
-                <input type="checkbox"
-                       class="order-item-checkbox"
-                       data-key="${key}"
-                       ${checked ? "checked" : ""} />
-                <div class="order-item-text">
-                  <b>${it.productName}</b> –
-                  <span style="color:#b91c1c;font-weight:600;">${
-                    it.qty
-                  }</span> × ₹${price.toFixed(2)}
-                  <span class="muted">(MRP ₹${mrp.toFixed(2)})</span>
-                </div>
-              </div>
-            `;
-        });
-
-        let statusTagClass = "pending";
-        if (o.status === "Delivered") statusTagClass = "delivered";
-        if (o.status === "Cancelled") statusTagClass = "cancelled";
-
-        const statusHtml = `
-            <div class="mt-4">
-              <span class="muted">Status:</span>
-              <span class="tag ${statusTagClass}">${o.status}</span>
-            </div>
-          `;
-
-        const actionsHtml = `
-            <div class="order-actions">
-              <button class="secondary order-edit-btn" data-id="${o._id}">
-                Edit
-              </button>
-              <button class="secondary order-delete-btn" data-id="${o._id}">
-                Delete
-              </button>
-            </div>
-          `;
-
-        card.innerHTML = headerHtml + itemsHtml + statusHtml + actionsHtml;
-        container.appendChild(card);
       });
+    });
+  }
 
-      // checkbox listeners
-      container
-        .querySelectorAll(".order-item-checkbox")
-        .forEach((cb) => {
-          cb.addEventListener("change", () => {
-            const key = cb.dataset.key;
-            if (cb.checked) {
-              if (!selectedItemKeys.includes(key)) {
-                selectedItemKeys.push(key);
-              }
-            } else {
-              selectedItemKeys = selectedItemKeys.filter((k) => k !== key);
-            }
-            saveSelectedItemKeys(selectedItemKeys);
-          });
-        });
+  // ----------------- Cart -----------------
+  function renderOrderItems() {
+    const tbody = document.getElementById("orderItemsTableBody");
+    const hint = document.getElementById("orderItemsHint");
+    if (!tbody || !hint) return;
+    tbody.innerHTML = "";
 
-      // Edit = open in Place Order
-      container.querySelectorAll(".order-edit-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const id = btn.dataset.id;
-          startEditOrder(id);
-        });
-      });
-
-      // Delete order
-      container.querySelectorAll(".order-delete-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const id = btn.dataset.id;
-          if (!confirm("Delete this order?")) return;
-          try {
-            await fetchJSON(API_BASE + `/api/orders/${id}`, {
-              method: "DELETE",
-            });
-            selectedItemKeys = selectedItemKeys.filter(
-              (k) => !k.startsWith(id + "::")
-            );
-            saveSelectedItemKeys(selectedItemKeys);
-            await loadOrders();
-          } catch (err) {
-            console.error(err);
-            alert("Error deleting order");
-          }
-        });
-      });
+    if (!currentOrderItems || currentOrderItems.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="muted">Cart empty. Add from product list above.</td>
+        </tr>
+      `;
+      hint.textContent = "Cart empty.";
+      const totalEl = document.getElementById("orderTotal");
+      if (totalEl) totalEl.textContent = "₹0.00";
+      return;
     }
 
-    // bulk status using selected items
-    async function updateSelectedOrdersStatus(newStatus) {
-      const orderIds = Array.from(
-        new Set(selectedItemKeys.map((k) => k.split("::")[0]))
-      );
+    hint.textContent = `${currentOrderItems.length} item(s) in cart`;
 
-      if (orderIds.length === 0) {
-        alert("No items selected");
+    let total = 0;
+    currentOrderItems.forEach((item, idx) => {
+      const line = item.price * item.qty;
+      total += line;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          ${item.name}
+          ${item.note ? `<div class="muted" style="font-size:11px;">${item.note}</div>` : ""}
+        </td>
+        <td class="text-right">₹${(Number(item.mrp) || 0).toFixed(2)}</td>
+        <td class="text-right">₹${(Number(item.price) || 0).toFixed(2)}</td>
+        <td class="text-right">
+          <button class="qty-btn" data-idx="${idx}" data-op="-">-</button>
+          <span style="margin:0 6px;">${item.qty}</span>
+          <button class="qty-btn" data-idx="${idx}" data-op="+">+</button>
+        </td>
+        <td class="text-right">₹${line.toFixed(2)}</td>
+        <td class="text-right">
+          <button class="secondary" data-remove="${idx}">✖</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const totalEl = document.getElementById("orderTotal");
+    if (totalEl) totalEl.textContent = `₹${total.toFixed(2)}`;
+
+    // qty buttons
+    tbody.querySelectorAll(".qty-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.dataset.idx);
+        const op = btn.dataset.op;
+        if (op === "+") {
+          currentOrderItems[idx].qty += 1;
+        } else {
+          currentOrderItems[idx].qty = Math.max(1, currentOrderItems[idx].qty - 1);
+        }
+        renderOrderItems();
+      });
+    });
+
+    // remove buttons
+    tbody.querySelectorAll("button[data-remove]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.dataset.remove);
+        currentOrderItems.splice(idx, 1);
+        renderOrderItems();
+      });
+    });
+  }
+
+  // ----------------- Edit flow: load order into Place Order -----------------
+  function startEditOrder(orderId) {
+    const order = orders.find((o) => o._id === orderId);
+    if (!order) return;
+
+    editingOrderId = orderId;
+
+    // shop select
+    const shopSearch = document.getElementById("orderShopSearch");
+    if (shopSearch) shopSearch.value = "";
+    renderOrderShopList();
+
+    if (order.shopId && document.getElementById("orderShopSelect")) {
+      document.getElementById("orderShopSelect").value = String(order.shopId);
+    }
+
+    // items -> cart
+    currentOrderItems = (order.items || []).map((it) => ({
+      _id: it.productId || "",
+      name: it.productName,
+      mrp: Number(it.mrp) || 0,
+      price: Number(it.price) || 0,
+      qty: Number(it.qty) || 1,
+      note: it.note || "",
+    }));
+
+    renderOrderItems();
+
+    // button text
+    const btn = document.getElementById("submitOrderBtn");
+    if (btn) btn.textContent = "💾 Update Order";
+
+    // go to Place Order view
+    showView("place-order");
+  }
+
+  // ----------------- Orders – card layout with item-wise checkboxes -----------------
+  function renderOrders() {
+    const container = document.getElementById("ordersCardsContainer");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (!orders || orders.length === 0) {
+      container.innerHTML = '<div class="muted">No orders yet. Create some from "Place Order".</div>';
+      return;
+    }
+
+    orders.forEach((o) => {
+      const card = document.createElement("div");
+      card.className = "order-card";
+
+      const date = new Date(o.createdAt);
+      const total = Number(o.totalAmount || 0);
+
+      let headerHtml = `
+        <div class="flex-between">
+          <div>
+            <div class="order-header-line">
+              Order #${String(o._id).slice(-6)}
+              ${o.shopName ? `<span class="order-shop-pill">${o.shopName}</span>` : ""}
+            </div>
+            <div class="muted" style="font-size:11px;">
+              ${date.toLocaleDateString()} , ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </div>
+          </div>
+          <div style="font-weight:600;font-size:14px;">₹${total.toFixed(2)}</div>
+        </div>
+      `;
+
+      let itemsHtml = "";
+      (o.items || []).forEach((it, idx) => {
+        const key = itemKey(o._id, idx);
+        const checked = selectedItemKeys.includes(key);
+        const mrp = Number(it.mrp || 0);
+        const price = Number(it.price || 0);
+        itemsHtml += `
+          <div class="order-item-row">
+            <input type="checkbox"
+                   class="order-item-checkbox"
+                   data-key="${key}"
+                   ${checked ? "checked" : ""} />
+            <div class="order-item-text">
+              <b>${it.productName}</b> –
+              <span style="color:#b91c1c;font-weight:600;">${it.qty}</span> × ₹${price.toFixed(2)}
+              <span class="muted">(MRP ₹${mrp.toFixed(2)})</span>
+              ${it.note ? `<div class="muted" style="font-size:11px;margin-top:4px;">📝 ${it.note}</div>` : ""}
+            </div>
+          </div>
+        `;
+      });
+
+      let statusTagClass = "pending";
+      if (o.status === "Delivered") statusTagClass = "delivered";
+      if (o.status === "Cancelled") statusTagClass = "cancelled";
+
+      const statusHtml = `
+        <div class="mt-4">
+          <span class="muted">Status:</span>
+          <span class="tag ${statusTagClass}">${o.status}</span>
+        </div>
+      `;
+
+      const actionsHtml = `
+        <div class="order-actions">
+          <button class="secondary order-edit-btn" data-id="${o._id}">Edit</button>
+          <button class="secondary order-delete-btn" data-id="${o._id}">Delete</button>
+        </div>
+      `;
+
+      card.innerHTML = headerHtml + itemsHtml + statusHtml + actionsHtml;
+      container.appendChild(card);
+    });
+
+    // checkbox listeners (attach after cards inserted)
+    container.querySelectorAll(".order-item-checkbox").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const key = cb.dataset.key;
+        if (cb.checked) {
+          if (!selectedItemKeys.includes(key)) selectedItemKeys.push(key);
+        } else {
+          selectedItemKeys = selectedItemKeys.filter((k) => k !== key);
+        }
+        saveSelectedItemKeys(selectedItemKeys);
+      });
+    });
+
+    // Edit buttons
+    container.querySelectorAll(".order-edit-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        startEditOrder(id);
+      });
+    });
+
+    // Delete order
+    container.querySelectorAll(".order-delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.id;
+        if (!confirm("Delete this order?")) return;
+        try {
+          await fetchJSON(API_BASE + `/api/orders/${id}`, { method: "DELETE" });
+          selectedItemKeys = selectedItemKeys.filter((k) => !k.startsWith(id + "::"));
+          saveSelectedItemKeys(selectedItemKeys);
+          await loadOrders();
+        } catch (err) {
+          console.error("Error deleting order", err);
+          alert("Error deleting order");
+        }
+      });
+    });
+  }
+
+  // ----------------- bulk status using selected items -----------------
+  async function updateSelectedOrdersStatus(newStatus) {
+    const orderIds = Array.from(new Set(selectedItemKeys.map((k) => k.split("::")[0])));
+
+    if (orderIds.length === 0) {
+      alert("No items selected");
+      return;
+    }
+
+    if (!confirm(`Change status of ${orderIds.length} order(s) to ${newStatus}?`)) return;
+
+    try {
+      for (const id of orderIds) {
+        await fetchJSON(API_BASE + `/api/orders/${id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+      }
+      selectedItemKeys = [];
+      saveSelectedItemKeys(selectedItemKeys);
+      await loadOrders();
+    } catch (err) {
+      console.error("Error updating status", err);
+      alert("Error updating status");
+    }
+  }
+
+  // ----------------- Event listeners -----------------
+  const shopSearchEl = document.getElementById("shopSearchInput");
+  if (shopSearchEl) shopSearchEl.addEventListener("input", renderShops);
+
+  const productSearchEl = document.getElementById("productSearchInput");
+  if (productSearchEl) productSearchEl.addEventListener("input", renderProducts);
+
+  const orderProductSearchEl = document.getElementById("orderProductSearch");
+  if (orderProductSearchEl) orderProductSearchEl.addEventListener("input", renderOrderProductList);
+
+  const orderShopSearchEl = document.getElementById("orderShopSearch");
+  if (orderShopSearchEl) orderShopSearchEl.addEventListener("input", renderOrderShopList);
+
+  const addShopBtn = document.getElementById("addShopBtn");
+  if (addShopBtn) {
+    addShopBtn.addEventListener("click", async () => {
+      const name = (document.getElementById("shopNameInput") || {}).value || "";
+      const trimmed = name.trim();
+      if (!trimmed) {
+        alert("Shop name required");
         return;
       }
+      try {
+        const shop = await fetchJSON(API_BASE + "/api/shops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed }),
+        });
+        shops.push(shop);
+        const el = document.getElementById("shopNameInput");
+        if (el) el.value = "";
+        renderShops();
+        populateShopSelects();
+        updateStats();
+      } catch (err) {
+        console.error("Error adding shop", err);
+        alert("Error adding shop");
+      }
+    });
+  }
 
-      if (
-        !confirm(
-          `Change status of ${orderIds.length} order(s) to ${newStatus}?`
-        )
-      ) {
+  const addProductBtn = document.getElementById("addProductBtn");
+  if (addProductBtn) {
+    addProductBtn.addEventListener("click", async () => {
+      const name = (document.getElementById("newProductName") || {}).value || "";
+      const mrp = Number((document.getElementById("newProductMrp") || {}).value || 0);
+      const price = Number((document.getElementById("newProductPrice") || {}).value || 0);
+      const trimmed = name.trim();
+      if (!trimmed || !mrp || !price) {
+        alert("Name, MRP, Price required");
         return;
       }
+      try {
+        const product = await fetchJSON(API_BASE + "/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed, mrp, price }),
+        });
+        products.push(product);
+        const a = document.getElementById("newProductName");
+        if (a) a.value = "";
+        const b = document.getElementById("newProductMrp");
+        if (b) b.value = "";
+        const c = document.getElementById("newProductPrice");
+        if (c) c.value = "";
+        renderProducts();
+        renderOrderProductList();
+        updateStats();
+      } catch (err) {
+        console.error("Error adding product", err);
+        alert("Error adding product");
+      }
+    });
+  }
+
+  const resetOrderBtn = document.getElementById("resetOrderBtn");
+  if (resetOrderBtn) {
+    resetOrderBtn.addEventListener("click", () => {
+      if (currentOrderItems.length === 0 || confirm("Clear selected items?")) {
+        currentOrderItems = [];
+        editingOrderId = null;
+        const sb = document.getElementById("submitOrderBtn");
+        if (sb) sb.textContent = "✅ Submit Order";
+        renderOrderItems();
+      }
+    });
+  }
+
+  const submitOrderBtn = document.getElementById("submitOrderBtn");
+  if (submitOrderBtn) {
+    submitOrderBtn.addEventListener("click", async () => {
+      const shopSelect = document.getElementById("orderShopSelect");
+      const shopId = shopSelect ? shopSelect.value : "";
+      if (!shopId) {
+        alert("Please select a shop");
+        return;
+      }
+      if (!currentOrderItems || currentOrderItems.length === 0) {
+        alert("Please add at least one product");
+        return;
+      }
+      const shop = shops.find((s) => s._id === shopId) || null;
+      const payload = {
+        shopId,
+        shopName: shop ? shop.name : "",
+        items: currentOrderItems.map((i) => ({
+          productId: i._id || null,
+          productName: i.name,
+          mrp: i.mrp,
+          price: i.price,
+          qty: i.qty,
+          note: i.note || "",
+        })),
+      };
+
+      const isEditing = !!editingOrderId;
+      const url = isEditing ? API_BASE + `/api/orders/${editingOrderId}` : API_BASE + "/api/orders";
+      const method = isEditing ? "PUT" : "POST";
 
       try {
-        for (const id of orderIds) {
-          await fetchJSON(API_BASE + `/api/orders/${id}/status`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: newStatus }),
-          });
-        }
-        selectedItemKeys = [];
-        saveSelectedItemKeys(selectedItemKeys);
-        await loadOrders();
-      } catch (err) {
-        console.error(err);
-        alert("Error updating status");
-      }
-    }
+        const btn = document.getElementById("submitOrderBtn");
+        if (btn) btn.disabled = true;
 
-    // -------- Event listeners ----------
-    document
-      .getElementById("shopSearchInput")
-      .addEventListener("input", renderShops);
+        const order = await fetchJSON(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-    document
-      .getElementById("productSearchInput")
-      .addEventListener("input", renderProducts);
-
-    document
-      .getElementById("orderProductSearch")
-      .addEventListener("input", renderOrderProductList);
-
-    document
-      .getElementById("orderShopSearch")
-      .addEventListener("input", renderOrderShopList);
-
-    document
-      .getElementById("addShopBtn")
-      .addEventListener("click", async () => {
-        const name = document.getElementById("shopNameInput").value.trim();
-        if (!name) {
-          alert("Shop name required");
-          return;
-        }
-        try {
-          const shop = await fetchJSON(API_BASE + "/api/shops", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name }),
-          });
-          shops.push(shop);
-          document.getElementById("shopNameInput").value = "";
-          renderShops();
-          populateShopSelects();
-          updateStats();
-        } catch (err) {
-          console.error(err);
-          alert("Error adding shop");
-        }
-      });
-
-    document
-      .getElementById("addProductBtn")
-      .addEventListener("click", async () => {
-        const name = document.getElementById("newProductName").value.trim();
-        const mrp = Number(
-          document.getElementById("newProductMrp").value || 0
-        );
-        const price = Number(
-          document.getElementById("newProductPrice").value || 0
-        );
-        if (!name || !mrp || !price) {
-          alert("Name, MRP, Price required");
-          return;
-        }
-        try {
-          const product = await fetchJSON(API_BASE + "/api/products", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, mrp, price }),
-          });
-          products.push(product);
-          document.getElementById("newProductName").value = "";
-          document.getElementById("newProductMrp").value = "";
-          document.getElementById("newProductPrice").value = "";
-          renderProducts();
-          renderOrderProductList();
-          updateStats();
-        } catch (err) {
-          console.error(err);
-          alert("Error adding product");
-        }
-      });
-
-    document
-      .getElementById("resetOrderBtn")
-      .addEventListener("click", () => {
-        if (
-          currentOrderItems.length === 0 ||
-          confirm("Clear selected items?")
-        ) {
-          currentOrderItems = [];
+        if (isEditing) {
+          const idx = orders.findIndex((o) => o._id === editingOrderId);
+          if (idx !== -1) orders[idx] = order;
           editingOrderId = null;
-          document.getElementById("submitOrderBtn").textContent =
-            "✅ Submit Order";
-          renderOrderItems();
+          if (btn) btn.textContent = "✅ Submit Order";
+          alert("Order updated successfully");
+        } else {
+          orders.unshift(order);
+          alert("Order created successfully");
         }
-      });
 
-    document
-      .getElementById("submitOrderBtn")
-      .addEventListener("click", async () => {
-        const shopId = document.getElementById("orderShopSelect").value;
-        if (!shopId) {
-          alert("Please select a shop");
-          return;
-        }
-        if (currentOrderItems.length === 0) {
-          alert("Please add at least one product");
-          return;
-        }
-        const shop = shops.find((s) => s._id === shopId);
-        const payload = {
-          shopId,
-          shopName: shop ? shop.name : "",
-          items: currentOrderItems.map((i) => ({
-            productId: i._id || null,
-            productName: i.name,
-            mrp: i.mrp,
-            price: i.price,
-            qty: i.qty,
-            note: i.note || "",
-          })),
-        };
-
-        const isEditing = !!editingOrderId;
-        const url = isEditing
-          ? API_BASE + `/api/orders/${editingOrderId}`
-          : API_BASE + "/api/orders";
-        const method = isEditing ? "PUT" : "POST";
-
-        try {
-          const btn = document.getElementById("submitOrderBtn");
-          btn.disabled = true;
-
-          const order = await fetchJSON(url, {
-            method,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-
-          if (isEditing) {
-            const idx = orders.findIndex((o) => o._id === editingOrderId);
-            if (idx !== -1) orders[idx] = order;
-            editingOrderId = null;
-            btn.textContent = "✅ Submit Order";
-            alert("Order updated successfully");
-          } else {
-            orders.unshift(order);
-            alert("Order created successfully");
-          }
-
-          currentOrderItems = [];
-          renderOrderItems();
-          renderOrders();
-          updateStats();
-          showView("orders");
-        } catch (err) {
-          console.error(err);
-          alert("Error saving order");
-        } finally {
-          document.getElementById("submitOrderBtn").disabled = false;
-        }
-      });
-
-    document
-      .getElementById("filterShopSelect")
-      .addEventListener("change", loadOrders);
-    document
-      .getElementById("filterStatusSelect")
-      .addEventListener("change", loadOrders);
-    document
-      .getElementById("refreshOrdersBtn")
-      .addEventListener("click", loadOrders);
-
-    document
-      .getElementById("markDeliveredBtn")
-      .addEventListener("click", () =>
-        updateSelectedOrdersStatus("Delivered")
-      );
-    document
-      .getElementById("markCancelledBtn")
-      .addEventListener("click", () =>
-        updateSelectedOrdersStatus("Cancelled")
-      );
-
-    document
-      .getElementById("clearSelectionsBtn")
-      .addEventListener("click", () => {
-        if (!confirm("Clear all tick marks (browser only)?")) return;
-        selectedItemKeys = [];
-        saveSelectedItemKeys(selectedItemKeys);
-        renderOrders();
-      });
-
-    // -------- Init ----------
-    async function init() {
-      try {
-        await Promise.all([loadShops(), loadProducts(), loadOrders()]);
+        currentOrderItems = [];
         renderOrderItems();
+        renderOrders();
+        updateStats();
+        showView("orders");
       } catch (err) {
-        console.error("Init error", err);
+        console.error("Error saving order", err);
+        alert("Error saving order");
+      } finally {
+        const btn = document.getElementById("submitOrderBtn");
+        if (btn) btn.disabled = false;
       }
-    }
+    });
+  }
 
-    init();
-  </script>
+  const filterShopSelect = document.getElementById("filterShopSelect");
+  if (filterShopSelect) filterShopSelect.addEventListener("change", loadOrders);
+  const filterStatusSelect = document.getElementById("filterStatusSelect");
+  if (filterStatusSelect) filterStatusSelect.addEventListener("change", loadOrders);
+  const refreshOrdersBtn = document.getElementById("refreshOrdersBtn");
+  if (refreshOrdersBtn) refreshOrdersBtn.addEventListener("click", loadOrders);
+
+  const markDeliveredBtn = document.getElementById("markDeliveredBtn");
+  if (markDeliveredBtn) markDeliveredBtn.addEventListener("click", () => updateSelectedOrdersStatus("Delivered"));
+  const markCancelledBtn = document.getElementById("markCancelledBtn");
+  if (markCancelledBtn) markCancelledBtn.addEventListener("click", () => updateSelectedOrdersStatus("Cancelled"));
+
+  const clearSelectionsBtn = document.getElementById("clearSelectionsBtn");
+  if (clearSelectionsBtn) {
+    clearSelectionsBtn.addEventListener("click", () => {
+      if (!confirm("Clear all tick marks (browser only)?")) return;
+      selectedItemKeys = [];
+      saveSelectedItemKeys(selectedItemKeys);
+      renderOrders();
+    });
+  }
+
+  // ----------------- Init -----------------
+  async function init() {
+    try {
+      await Promise.all([loadShops(), loadProducts(), loadOrders()]);
+      renderOrderItems();
+    } catch (err) {
+      console.error("Init error", err);
+    }
+  }
+
+  init();
+</script>
+
 </body>
 </html>
