@@ -936,7 +936,7 @@ tr:hover td {
                     <table>
                       <thead>
                         <tr>
-                          <th>Product</th>
+                          <th><b>Product</b></th>
                           <th class="text-right">MRP</th>
                           <th class="text-right">Price</th>
                           <th class="text-right">Qty</th>
@@ -1029,9 +1029,10 @@ tr:hover td {
               </div>
 
               <div class="mt-4">
-                <button class="secondary" id="clearSelectionsBtn">
-                  Clear All Orders (this browser)
-                </button>
+              <button class="secondary" id="clearAllOrdersBtn"
+        style="background:#fee2e2;color:#991b1b;">
+  🗑️ Clear All Order
+</button>
               </div>
 
               <div class="muted mt-4">
@@ -1354,7 +1355,7 @@ tr:hover td {
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${p.name}</td>
+        <td><b style="color:darkblue"> ${p.name}</b></td>
         <td class="text-right">₹${mrp.toFixed(2)}</td>
         <td class="text-right">₹${price.toFixed(2)}</td>
 
@@ -1884,6 +1885,33 @@ tr:hover td {
   }
 
   init();
+
+  const clearAllOrdersBtn = document.getElementById("clearAllOrdersBtn");
+
+if (clearAllOrdersBtn) {
+  clearAllOrdersBtn.addEventListener("click", async () => {
+
+    if (!confirm("⚠️ This will permanently delete ALL orders. Continue?")) return;
+
+    try {
+      await fetchJSON(API_BASE + "/api/orders", {
+        method: "DELETE"
+      });
+
+      orders = [];
+      selectedItemKeys = [];
+      saveSelectedItemKeys(selectedItemKeys);
+
+      renderOrders();
+      updateStats();
+
+      alert("All orders deleted successfully");
+
+    } catch (err) {
+      alert("Error clearing all orders");
+    }
+  });
+}
 </script>
 
 </body>
